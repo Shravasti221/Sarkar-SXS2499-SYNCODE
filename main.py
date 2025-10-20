@@ -31,7 +31,6 @@ for name, definition in experts_json.items():
 # # Graph edges as per your spec
 workflow.add_edge(START, "problem_creator")
 workflow.add_edge("problem_creator", "user")
-workflow.add_edge("user", "orchestrator")
 
 for name, node in expert_nodes.items():
     workflow.add_conditional_edges(

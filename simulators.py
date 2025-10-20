@@ -67,11 +67,10 @@ Your behavior rules:
 2. Do NOT attempt to solve the problem yourself.
 3. Read the chat history carefully and decide:
    - If your issue already seems resolved respond with "END OF CONVERSATION".
-   - If the response indicates that your next steps require external actions respond with "END OF CONVERSATION".
+   - If the conversation indicates that your next steps require external actions, respond with "END OF CONVERSATION".
    
    - Otherwise, respond as a human who needs help, by:
      • Asking clarifying questions,
-     • Requesting examples or next steps,
      • Expressing confusion or frustration naturally.
 4. Always speak in the first person (e.g., “I’m trying to…”).
 5. Keep the tone realistic and concise — like an actual user chatting, not an AI.
@@ -99,6 +98,5 @@ Output: a single user message in plain English.
 
 def user_route(state: EventState) -> str:
     """Decides next node after User"""
-    print("PLEASE USER ROUTER: ", state.next)
     return state.next
     
