@@ -2,7 +2,7 @@ import json
 import uuid
 from helpers import print_message, llm, EventState, responseFormat, safe_invoke_llm
 from langchain_core.messages import SystemMessage, ToolMessage, AIMessage
-from formatter import JsonFormat
+from json_format import JsonFormat
 
 # -----------------------------
 # Expert Node
@@ -16,7 +16,7 @@ class Expert:
             f"You are {self.name}, expert in {self.description}. Answer clearly."
         )
         
-        self.formatter = JsonFormat(
+        self.json_format = JsonFormat(
             pydantic_model=responseFormat,
             expected_format="""
             {
@@ -39,7 +39,7 @@ class Expert:
         print("__________________________________________________________________________________________________________")
         print_message(self.name, ":", msg.content)
         
-        formatted_output = self.formatter.refine(msg.content)
+        formatted_output = self.json_format.refine(msg.content)
         try:
             msg_text = formatted_output.strip().removeprefix("```json").removesuffix("```").strip()
             parsed = json.loads(msg_text)

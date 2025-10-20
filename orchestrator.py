@@ -5,7 +5,7 @@ from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, Human
 
 from helpers import print_message, llm, safe_invoke_llm
 from helpers import responseFormat
-from formatter import JsonFormat
+from json_format import JsonFormat
 
 import difflib
 from typing import List, Set
@@ -66,7 +66,7 @@ class Orchestrator:
         else:
             self.experts = experts
         allowed_routes = tuple(self.experts.keys()) + ("api_execution", "response")
-        self.formatter = JsonFormat(
+        self.json_format = JsonFormat(
             pydantic_model=responseFormat,
             expected_format=json.dumps(responseFormat.model_json_schema(), indent=2) + "\nAllowed routes: " + " or ".join(allowed_routes),
             verbose=True
@@ -185,7 +185,7 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
         print_message(state, self.name, msg.content)
 
         try:
-            formatted_output = self.formatter.refine(msg.content)
+            formatted_output = self.json_format.refine(msg.content)
             msg_text = formatted_output.strip().removeprefix("```json").removesuffix("```").strip()
             parsed = json.loads(msg_text)
         except Exception as e:
