@@ -140,17 +140,19 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
 """.strip()
      
             elif isinstance(most_recent_chat, (HumanMessage)):
+                # removed ability to give generic advice on unavailable tools like google calendar notifications, projector set up, etc.
+                # as quality was low and often led to meaningless conversations.
                 BASE_PROMPT = f"""
             You are the Orchestrator Agent.
             Your job is to:
             1. Interpret the user’s message and the full conversation history.
             2. Decide exactly one of three actions:
-            - Return a direct response (the Orchestrator answers).
+            - Return a SHORT direct response (the Orchestrator answers).
             - Route to an Expert (ask an expert to act or answer).
 
             Rules for output format (STRICT JSON only — no prose, no extra fields, no markdown):
             1. Your assistant output MUST be a single JSON object and nothing else.
-            2. IF there is no appropriate expert agent to call and you have the knowledge to respond to the chat, output EXACTLY:
+            2. IF there is no appropriate expert agent or the user has to use some other platform or perform a physical task DONOT give generic advice on tools that are not available to you. Give a SHORT direction on next steps. Attempt to close the conversation. Output EXACTLY:
             {{
                 "route": "response",
                 "task": null,

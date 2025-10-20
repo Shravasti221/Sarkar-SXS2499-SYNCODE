@@ -1,0 +1,20 @@
+[project]
+name = "langchain-env"
+version = "0.1.0"
+description = "Environment for LangChain + Groq + LangGraph experiments"
+authors = [{ name = "Your Name" }]
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "langchain",
+    "langchain-openai",
+    "langchain_community",
+    "langsmith",
+    "langgraph",
+    "groq"
+]
+
+[tool.uv]
+# Optional: specify which Python version uv should use
+python = "3.10"

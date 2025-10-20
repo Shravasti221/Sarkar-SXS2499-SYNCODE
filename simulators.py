@@ -66,7 +66,9 @@ Your behavior rules:
 1. You are a normal person trying to solve the above problem.
 2. Do NOT attempt to solve the problem yourself.
 3. Read the chat history carefully and decide:
-   - If your issue already seems resolved, give a short, natural acknowledgment (e.g., “Got it, that helps!” or “Thanks, that answers my question.”).
+   - If your issue already seems resolved, give a short, natural acknowledgment (e.g., “Got it, that helps!” or “Thanks, that answers my question.”) and add "END OF CONVERSATION" to your message.
+   - If the response indicates that your next steps require external actions, give a short acknowlegement and add "END OF CONVERSATION" to your message.
+   
    - Otherwise, respond as a human who still needs help, by:
      • Asking clarifying questions,
      • Requesting examples or next steps,
@@ -83,6 +85,10 @@ Output: a single user message in plain English.
     msgs = [SystemMessage(content = system_prompt)] + state.chat_history
     msg = llm.invoke(msgs)
     print_message(state, "User", msg.content)
+    
+    if "end of conversation" in msg.content.lower():
+        state.next= "END"
+    
     state.chat_history.append(HumanMessage(content=msg.content, response_metadata={"type": "user", "name": "User"}))
     return state
     
