@@ -76,4 +76,3 @@ display(Image(chain.get_graph().draw_mermaid_png()))
 chat_history = []
 state = EventState(chat_history=chat_history, problem_created="The 2025 Digital Marketing Summit is scheduled for Nov 24‑26 at the Grand Plaza Conference Center. Day 2’s keynote at 11:30 a.m. will feature Alex Chen, but his MacBook runs MacOS while the venue’s projector only accepts Windows-based files. The IT team hasn’t found a quick compatibility solution, risking a delay for the audience. The event team needs a timely workaround to display the keynote slides.")
 state = chain.invoke(state)
-print(json.dumps(state, indent=2))

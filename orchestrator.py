@@ -146,20 +146,20 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
             You are the Orchestrator Agent.
             Your job is to:
             1. Interpret the user’s message and the full conversation history.
-            2. Your assistant output MUST be a single JSON object and nothing else. Answer in less than 100 words. Be BRIEF
-            3. IF there is no appropriate expert agent OR external task is required, give a short direction. DONOT ask further questions. Output EXACTLY:
-            {{
-                "route": "response",
-                "task": null,
-                "response": "<your textual answer>"
-            }}
-            4. ELSE IF there is an expert agent that has a match greater than 50% with the latest chat context ({most_recent_chat}) route to the Expert, output EXACTLY:
+            2. Your assistant output MUST be a single JSON object and nothing else. Be BRIEF
+            3. IF there is either {experts_keys_bar} has a match greater than 50% with the latest chat context ({most_recent_chat}) route to the correct Expert, output EXACTLY:
             {{
                 "route": "<EXPERT_NAME>",
                 "task": null,
                 "response": null
             }}
             Allowed Expert Names: {experts_keys_bar}
+            4. IF there is no appropriate expert agent OR external task is required, give a short direction. DONOT ask further questions. Output EXACTLY:
+            {{
+                "route": "response",
+                "task": null,
+                "response": "<your textual answer>"
+            }}
 
             Experts available:
             {"\n".join(experts)}
