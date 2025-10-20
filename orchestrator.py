@@ -5,7 +5,7 @@ from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, Human
 
 from helpers import print_message, llm, safe_invoke_llm
 from helpers import responseFormat
-from formatter import Formatter
+from formatter import JsonFormat
 
 import difflib
 from typing import List, Set
@@ -66,7 +66,7 @@ class Orchestrator:
         else:
             self.experts = experts
         allowed_routes = tuple(self.experts.keys()) + ("api_execution", "response")
-        self.formatter = Formatter(
+        self.formatter = JsonFormat(
             pydantic_model=responseFormat,
             expected_format=json.dumps(responseFormat.model_json_schema(), indent=2) + "\nAllowed routes: " + " or ".join(allowed_routes),
             verbose=True

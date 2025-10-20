@@ -1,10 +1,12 @@
-import os, json, re
+import os
+import json
+import re
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import Type, Optional
 
 
-class Formatter:
+class JsonFormat:
     def __init__(self, pydantic_model: Type[BaseModel], expected_format: str, max_retries: int = 3, llm: Optional[ChatOpenAI] = None, verbose: bool = True):
         self.max_retries = max_retries
         self.verbose = verbose
@@ -69,13 +71,13 @@ class Formatter:
 
     def refine(self, text: str) -> str:
         """Run evaluator–corrector loop up to max_retries."""
-        print("\n=== FormatRefiner ===")
+        # print("\n=== FormatRefiner ===")
         best_text, best_score = text, 0
 
         for i in range(1, self.max_retries + 1):
-            print(f"\n--- Pass {i}/{self.max_retries} ---")
+            # print(f"\n--- Pass {i}/{self.max_retries} ---")
             score, feedback = self._evaluate(best_text)
-            print(f"Score: {score}, Feedback/Clean text: {feedback}")
+            # print(f"Score: {score}, Feedback/Clean text: {feedback}")
 
             if score >= 1:
                 best_text = feedback

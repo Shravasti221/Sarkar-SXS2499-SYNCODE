@@ -87,6 +87,9 @@ Output: a single user message in plain English.
     print_message(state, "User", msg.content)
     
     if "end of conversation" in msg.content.lower():
+        print("!!____________________________________________________________________!!")
+        print("Conversation ended by User.")
+        print("!!____________________________________________________________________!!")
         state.next= "END"
     
     state.chat_history.append(HumanMessage(content=msg.content, response_metadata={"type": "user", "name": "User"}))
@@ -94,5 +97,6 @@ Output: a single user message in plain English.
 
 def user_route(state: EventState) -> str:
     """Decides next node after User"""
+    print("USER ROUTER: ", state.next)
     return state.next if state.next else "orchestrator"
     
