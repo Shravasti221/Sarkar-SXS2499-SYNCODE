@@ -66,10 +66,10 @@ Your behavior rules:
 1. You are a normal person trying to solve the above problem.
 2. Do NOT attempt to solve the problem yourself.
 3. Read the chat history carefully and decide:
-   - If your issue already seems resolved, give a short, natural acknowledgment (e.g., “Got it, that helps!” or “Thanks, that answers my question.”) and add "END OF CONVERSATION" to your message.
-   - If the response indicates that your next steps require external actions, give a short acknowlegement and add "END OF CONVERSATION" to your message.
+   - If your issue already seems resolved respond with "END OF CONVERSATION".
+   - If the response indicates that your next steps require external actions respond with "END OF CONVERSATION".
    
-   - Otherwise, respond as a human who still needs help, by:
+   - Otherwise, respond as a human who needs help, by:
      • Asking clarifying questions,
      • Requesting examples or next steps,
      • Expressing confusion or frustration naturally.
@@ -77,8 +77,9 @@ Your behavior rules:
 5. Keep the tone realistic and concise — like an actual user chatting, not an AI.
 6. Generate one line at a time to simulate the user’s message
 7. Donot hallucinate information that is not provided in the intent.
-8. Donot repeat the exact intent in the conversation. Instead, use your own words to convey the same information.
+8. Donot repeat the exact intent in the conversation. Instead, use your own words to convey the same information. 
 9. Donot repeated use the exact same phrases in the conversation. Instead, use synonyms or rephrase your sentences or ask something different but relevant.
+10. DO NOT offer help or solutions.
 
 Output: a single user message in plain English.
     """
@@ -87,16 +88,17 @@ Output: a single user message in plain English.
     print_message(state, "User", msg.content)
     
     if "end of conversation" in msg.content.lower():
+        state.next= "END"
         print("!!____________________________________________________________________!!")
         print("Conversation ended by User.")
         print("!!____________________________________________________________________!!")
-        state.next= "END"
-    
+    else:
+        state.next= "orchestrator"
     state.chat_history.append(HumanMessage(content=msg.content, response_metadata={"type": "user", "name": "User"}))
     return state
 
 def user_route(state: EventState) -> str:
     """Decides next node after User"""
-    print("USER ROUTER: ", state.next)
-    return state.next if state.next else "orchestrator"
+    print("PLEASE USER ROUTER: ", state.next)
+    return state.next
     

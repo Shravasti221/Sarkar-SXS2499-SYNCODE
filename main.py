@@ -61,8 +61,8 @@ orchestrator_next_nodes.update({
 workflow.add_conditional_edges("orchestrator", orchestrator.route, orchestrator_next_nodes)
 # ------------------------------ ----------- User Route Edges ------------ ------------------------------
 user_next_nodes = {
-    "orchestrator": "orchestrator",
     "END": END,
+    "orchestrator": "orchestrator",
 }
 workflow.add_conditional_edges("user", user_route, user_next_nodes)
 # ---------------------------------------------------------------------------------------------------------

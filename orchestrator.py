@@ -152,7 +152,7 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
 
             Rules for output format (STRICT JSON only — no prose, no extra fields, no markdown):
             1. Your assistant output MUST be a single JSON object and nothing else.
-            2. IF there is no appropriate expert agent or the user has to use some other platform or perform a physical task DONOT give generic advice on tools that are not available to you. Give a SHORT direction on next steps. Attempt to close the conversation. Output EXACTLY:
+            2. IF there is no appropriate expert agent or some other platform or physical task is required DONOT give generic long advice. Give a SHORT direction on next steps and close the conversation. Output EXACTLY:
             {{
                 "route": "response",
                 "task": null,
