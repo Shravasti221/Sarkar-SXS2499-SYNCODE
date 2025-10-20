@@ -91,4 +91,8 @@ Output: a single user message in plain English.
     
     state.chat_history.append(HumanMessage(content=msg.content, response_metadata={"type": "user", "name": "User"}))
     return state
+
+def user_route(state: EventState) -> str:
+    """Decides next node after User"""
+    return state.next if state.next else "orchestrator"
     

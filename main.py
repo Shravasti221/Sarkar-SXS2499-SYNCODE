@@ -6,7 +6,7 @@ from langgraph.graph import StateGraph, START, END
 from IPython.display import Image, display
 import json, os
 from orchestrator import Orchestrator 
-from simulators import problem_creator_llm, user_llm
+from simulators import problem_creator_llm, user_llm, user_route
 from api_execution import APIPipeline
 from helpers import EventState
 #-------------------
@@ -56,11 +56,16 @@ workflow.add_conditional_edges(
 orchestrator_next_nodes = {expert_name: expert_name for expert_name in experts_json.keys()}
 orchestrator_next_nodes.update({
     "user": "user",
-    "api_execution": "api_execution",
-    "end": END
+    "api_execution": "api_execution"
 })
 workflow.add_conditional_edges("orchestrator", orchestrator.route, orchestrator_next_nodes)
-# ------------------------------ ------------------------------ ------------------------------
+# ------------------------------ ----------- User Route Edges ------------ ------------------------------
+user_next_nodes = {
+    "orchestrator": "orchestrator",
+    "END": END,
+}
+workflow.add_conditional_edges("user", user_route, user_next_nodes)
+# ---------------------------------------------------------------------------------------------------------
 
 # Compile workflow
 chain = workflow.compile()
