@@ -1,0 +1,75 @@
+import json
+from typing import Dict, Any
+from expert import Expert
+from typing_extensions import TypedDict
+from langgraph.graph import StateGraph, START, END
+from IPython.display import Image, display
+import json, os
+from orchestrator import Orchestrator 
+from simulators import problem_creator_llm, user_llm
+from api_execution import APIPipeline
+from helpers import EventState
+#-------------------
+# Build Workflow Graph
+# -----------------------------
+experts_json = json.load(open("experts.json")) 
+workflow = StateGraph(EventState)
+workflow.add_node("problem_creator", problem_creator_llm)
+workflow.add_node("user", user_llm)
+
+orchestrator = Orchestrator(experts = experts_json)
+api_pipeline = APIPipeline()
+workflow.add_node("orchestrator", orchestrator.node_fn)
+workflow.add_node("api_execution", api_pipeline.process)
+
+expert_nodes = {}
+for name, definition in experts_json.items():
+    expert = Expert(name, definition)
+    expert_nodes[name] = expert
+    workflow.add_node(name, expert.node_fn)
+
+# # Graph edges as per your spec
+workflow.add_edge(START, "problem_creator")
+workflow.add_edge("problem_creator", "user")
+workflow.add_edge("user", "orchestrator")
+
+for name, node in expert_nodes.items():
+    workflow.add_conditional_edges(
+        name,
+        node.route,  # use the expert's own route method
+        {
+            "api_execution": "api_execution",
+            "orchestrator": "orchestrator"
+        }
+    )
+# ------------------------------Dynamic routing edges for API execution ------------------------------
+aex_next_nodes = {expert_name: expert_name for expert_name in experts_json.keys()}
+aex_next_nodes.update({
+    "orchestrator": "orchestrator"
+})
+workflow.add_conditional_edges(
+    "api_execution",
+    api_pipeline.route,
+    aex_next_nodes
+)
+# ------------------------------Dynamic routing edges for junior assistant ------------------------------
+orchestrator_next_nodes = {expert_name: expert_name for expert_name in experts_json.keys()}
+orchestrator_next_nodes.update({
+    "user": "user",
+    "api_execution": "api_execution",
+    "end": END
+})
+workflow.add_conditional_edges("orchestrator", orchestrator.route, orchestrator_next_nodes)
+# ------------------------------ ------------------------------ ------------------------------
+
+# Compile workflow
+chain = workflow.compile()
+display(Image(chain.get_graph().draw_mermaid_png()))
+
+# -----------------------------
+# Example run
+# -----------------------------
+chat_history = []
+state = EventState(chat_history=chat_history, problem_created="Generate a problem scenario")
+state = chain.invoke(state)
+print(json.dumps(state, indent=2))

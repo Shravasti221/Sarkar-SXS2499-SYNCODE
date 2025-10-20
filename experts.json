@@ -1,0 +1,279 @@
+{
+  "VenueManager": {
+    "description": "Oversees venue sourcing, layout planning, capacity validation, and booking management across multiple providers.",
+    "expert_prompt": "You are the Venue Manager Agent. You specialize in cross-provider venue discovery, booking coordination, and conflict resolution. Use relevant APIs to compare availability, capacity, and pricing before confirming final decisions.",
+    "apis": {
+      "VenueFinderAPI": {
+        "params": {
+          "url": "https://api.venuefinder.io/v2/list",
+          "apikey": "<YOUR_API_KEY>",
+          "city": "string",
+          "guest_capacity": "int",
+          "date": "YYYY-MM-DD"
+        },
+        "description": "Primary API for searching venues across regions. Supports basic filters and returns summarized metadata."
+      },
+      "BookSpaceAPI": {
+        "params": {
+          "url": "https://api.bookspace.app/v1/availability",
+          "token": "<AUTH_TOKEN>",
+          "venue_id": "string",
+          "checkin": "YYYY-MM-DDTHH:MM",
+          "checkout": "YYYY-MM-DDTHH:MM"
+        },
+        "description": "Provides real-time slot-level availability for listed venues."
+      },
+      "HallIQ": {
+        "params": {
+          "url": "https://halliq.net/api/v1/capacity",
+          "auth_key": "<YOUR_AUTH_KEY>",
+          "venue_ref": "string",
+          "layout_type": "string (theatre|banquet|conference)"
+        },
+        "description": "Fetch layout-based capacity and seating recommendations for a venue."
+      },
+      "VenueQuoteAPI": {
+        "params": {
+          "url": "https://api.quotespaces.com/v1/pricing",
+          "apikey": "<YOUR_API_KEY>",
+          "venue_code": "string",
+          "hours": "float",
+          "attendees": "int"
+        },
+        "description": "Returns estimated rental pricing and surcharges for given usage parameters."
+      },
+      "VenueLockAPI": {
+        "params": {
+          "url": "https://secure.venueshield.io/v1/hold",
+          "apikey": "<YOUR_API_KEY>",
+          "venue_id": "string",
+          "event_date": "YYYY-MM-DD",
+          "hold_duration_minutes": "int"
+        },
+        "description": "Temporarily reserves a venue slot before full confirmation to avoid double bookings."
+      },
+      "VenueCancelAPI": {
+        "params": {
+          "url": "https://api.venueops.net/v1/cancel",
+          "apikey": "<YOUR_API_KEY>",
+          "booking_ref": "string",
+          "reason": "string"
+        },
+        "description": "Used to cancel pre-confirmed or held venue bookings."
+      }
+    }
+  },
+
+  "CateringManager": {
+    "description": "Coordinates catering vendors, menu designs, pricing negotiations, and dietary validations across multiple partners.",
+    "expert_prompt": "You are the Catering Manager Agent. You are responsible for ensuring food, beverages, and dietary arrangements are compliant with event needs. Always compare vendors and validate menus before confirming.",
+    "apis": {
+      "MenuCraftAPI": {
+        "params": {
+          "url": "https://api.menucraft.co/v1/menus",
+          "apikey": "<YOUR_API_KEY>",
+          "guest_count": "int",
+          "dietary_tags": "list[str]",
+          "budget_per_person": "float"
+        },
+        "description": "Returns available menu packages and cost breakdowns per guest."
+      },
+      "FoodEdge": {
+        "params": {
+          "url": "https://partner.foodedge.io/api/v2/vendors",
+          "key": "<ACCESS_KEY>",
+          "city": "string",
+          "service_type": "string (buffet|plated|cocktail)"
+        },
+        "description": "Lists available catering vendors filtered by city and service style."
+      },
+      "PlatefulAPI": {
+        "params": {
+          "url": "https://api.plateful.app/v1/orders/quote",
+          "apikey": "<YOUR_API_KEY>",
+          "vendor_id": "string",
+          "menu_id": "string",
+          "guests": "int",
+          "delivery_slot": "string (HH:MM-HH:MM)"
+        },
+        "description": "Generates dynamic pricing and order quotes for a vendor-menu pair."
+      },
+      "DietScanAPI": {
+        "params": {
+          "url": "https://api.dietscan.health/v1/check",
+          "apikey": "<YOUR_API_KEY>",
+          "menu_id": "string",
+          "restrictions": "list[str]"
+        },
+        "description": "Analyzes a menu against allergy and dietary restriction lists."
+      },
+      "ChefConnect": {
+        "params": {
+          "url": "https://chefconnect.io/v1/availability",
+          "apikey": "<YOUR_API_KEY>",
+          "vendor_name": "string",
+          "event_date": "YYYY-MM-DD"
+        },
+        "description": "Checks chef or vendor staff availability on a given date."
+      },
+      "TasteLink": {
+        "params": {
+          "url": "https://api.tastelink.net/v2/samples",
+          "apikey": "<YOUR_API_KEY>",
+          "menu_id": "string",
+          "preferred_delivery_date": "YYYY-MM-DD"
+        },
+        "description": "Used to request sample tasting deliveries before finalizing menu selection."
+      }
+    }
+  },
+  "LogisticsManager": {
+    "description": "Handles end-to-end event logistics: routing, fleet coordination, staff scheduling, delivery tracking, inventory allocation, vendor management, and compliance.",
+    "expert_prompt": "You are the Logistics Manager Agent. You coordinate transport, staff, inventory, and partner operations. Use the relevant APIs to plan, monitor, and resolve issues dynamically.",
+    "apis": {
+      "MoveSync": {
+        "params": {
+          "url": "https://api.movesync.io/v1/routes",
+          "apikey": "<YOUR_API_KEY>",
+          "origin": "string",
+          "destination": "string",
+          "departure_time": "HH:MM"
+        },
+        "description": "Fetches optimized routes with live traffic and toll cost data."
+      },
+      "TransitIQ": {
+        "params": {
+          "url": "https://transitiq.net/api/v1/eta",
+          "auth_token": "<AUTH_TOKEN>",
+          "vehicle_id": "string",
+          "current_lat": "float",
+          "current_lng": "float",
+          "destination_lat": "float",
+          "destination_lng": "float"
+        },
+        "description": "Estimates delivery or transport arrival times using live GPS telemetry."
+      },
+      "FleetDeskAPI": {
+        "params": {
+          "url": "https://fleetdesk.app/api/v2/vehicles",
+          "apikey": "<YOUR_API_KEY>",
+          "type": "string (van|truck|bus)",
+          "available_on": "YYYY-MM-DD"
+        },
+        "description": "Checks vehicle availability and maintenance status by type and date."
+      },
+      "TrackFleet": {
+        "params": {
+          "url": "https://trackfleet.io/api/v1/health",
+          "apikey": "<YOUR_API_KEY>",
+          "vehicle_id": "string"
+        },
+        "description": "Monitors fuel level, mileage, and maintenance alerts for a specific vehicle."
+      },
+      "OpsSync": {
+        "params": {
+          "url": "https://opsync.co/v1/staff/schedule",
+          "apikey": "<YOUR_API_KEY>",
+          "date": "YYYY-MM-DD"
+        },
+        "description": "Retrieves event-day staff rosters and assigned shift windows."
+      },
+      "ShiftIQ": {
+        "params": {
+          "url": "https://shiftiq.io/api/v1/attendance",
+          "apikey": "<YOUR_API_KEY>",
+          "staff_id": "string",
+          "timestamp": "ISO-8601"
+        },
+        "description": "Tracks staff check-ins and absences in real time."
+      },
+      "LoadIQ": {
+        "params": {
+          "url": "https://api.loadiq.io/v1/deliveries",
+          "apikey": "<YOUR_API_KEY>",
+          "shipment_id": "string",
+          "priority": "string (normal|urgent)"
+        },
+        "description": "Fetches delivery tracking details and fulfillment status."
+      },
+      "DropTrack": {
+        "params": {
+          "url": "https://droptrack.app/api/v2/pickups",
+          "apikey": "<YOUR_API_KEY>",
+          "order_id": "string"
+        },
+        "description": "Confirms pickup or drop completion for deliveries with digital proof."
+      },
+      "StockPort": {
+        "params": {
+          "url": "https://stockport.io/api/v1/inventory",
+          "apikey": "<YOUR_API_KEY>",
+          "warehouse_id": "string",
+          "item_sku": "string"
+        },
+        "description": "Retrieves live stock availability of event supplies and equipment."
+      },
+      "Storewise": {
+        "params": {
+          "url": "https://storewise.net/api/v1/movements",
+          "apikey": "<YOUR_API_KEY>",
+          "item_id": "string",
+          "direction": "string (in|out)"
+        },
+        "description": "Tracks inbound/outbound movements for consumables or gear."
+      },
+      "PartnerBridge": {
+        "params": {
+          "url": "https://partnerbridge.io/api/v1/vendors",
+          "apikey": "<YOUR_API_KEY>",
+          "service_type": "string (lighting|sound|transport)",
+          "location": "string"
+        },
+        "description": "Lists approved logistics or technical vendors available for collaboration."
+      },
+      "LogiHub": {
+        "params": {
+          "url": "https://logihub.app/api/v2/contracts",
+          "apikey": "<YOUR_API_KEY>",
+          "vendor_id": "string",
+          "contract_status": "string (active|expired)"
+        },
+        "description": "Fetches existing vendor contract data and expiry details."
+      },
+      "CityFlow": {
+        "params": {
+          "url": "https://data.cityflow.io/v3/traffic",
+          "apikey": "<YOUR_API_KEY>",
+          "area_code": "string",
+          "timestamp": "ISO-8601"
+        },
+        "description": "Provides congestion levels and delay estimates by area code."
+      },
+      "SenseFleet": {
+        "params": {
+          "url": "https://sensefleet.ai/api/v1/anomalies",
+          "apikey": "<YOUR_API_KEY>",
+          "vehicle_id": "string"
+        },
+        "description": "Detects route deviations or idle-time anomalies from live vehicle data."
+      },
+      "DocFlow": {
+        "params": {
+          "url": "https://docflow.net/api/v1/permits",
+          "apikey": "<YOUR_API_KEY>",
+          "route_id": "string",
+          "region": "string"
+        },
+        "description": "Validates required transport permits or event logistics paperwork."
+      },
+      "PermitCheck": {
+        "params": {
+          "url": "https://permitcheck.io/api/v2/insurance",
+          "apikey": "<YOUR_API_KEY>",
+          "vehicle_id": "string"
+        },
+        "description": "Verifies transport insurance coverage and policy validity."
+      }
+    }
+  }
+}
