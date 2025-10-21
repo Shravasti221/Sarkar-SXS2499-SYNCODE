@@ -3,9 +3,12 @@ import json
 import uuid
 from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, HumanMessage
 
-from helpers import print_message, llm, safe_invoke_llm
-from helpers import responseFormat
-from json_format import JsonFormat
+from utils.helpers import print_message
+from utils.llm import llm
+from utils.safe_invoke_llm import safe_invoke_llm
+from utils.pydantic_objects import responseFormat
+from utils.json_format import JsonFormat
+from utils.detect_repetition import check_repetition
 
 import difflib
 from typing import List, Set
@@ -177,6 +180,21 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
         
         prompt = self.build_orchestrator_prompt(state)
         msg = safe_invoke_llm(llm,[SystemMessage(content =  prompt)] + state.chat_history)
+        attempts = 0
+        max_retries = 3
+
+        while attempts < max_retries:
+            if check_repetition(state, msg.content, self.name):
+                break
+            
+            attempts += 1
+            print(f"[REPETITION DETECTED - Retry {attempts}/{max_retries}]")
+            
+            if attempts < max_retries:
+                updated_sysprompt = sys_prompt+ f"\n\n[CRITICAL: Generate COMPLETELY NEW response. NO repetition of previous answers.]"
+                msg = safe_invoke_llm(llm, [SystemMessage(content=updated_sysprompt)] + chat_history)
+            else:
+                print("[GIVING UP AFTER 3 RETRIES - Using last response]")
         print_message(state, self.name, msg.content)
 
         try:

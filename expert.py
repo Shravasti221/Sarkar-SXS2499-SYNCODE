@@ -1,9 +1,11 @@
 import json
 import uuid
-from helpers import print_message, llm, EventState, responseFormat, safe_invoke_llm
+from llm import llm
+from pydantic_objects import EventState, responseFormat
+from safe_invoke_llm import safe_invoke_llm
 from langchain_core.messages import SystemMessage, ToolMessage, AIMessage
-from json_format import JsonFormat
-
+from utils.json_format import JsonFormat
+from utils.detect_repetition import check_repetition
 # -----------------------------
 # Expert Node
 # -----------------------------
@@ -36,8 +38,21 @@ class Expert:
         sys_prompt = self.build_system_prompt()
         chat_history = [SystemMessage(content = sys_prompt)]+ state.chat_history
         msg = safe_invoke_llm(llm, chat_history)
-        print("__________________________________________________________________________________________________________")
-        print_message(self.name, ":", msg.content)
+        attempts = 0
+        max_retries = 3
+
+        while attempts < max_retries:
+            if check_repetition(state, msg.content, self.name):
+                break
+            
+            attempts += 1
+            print(f"[REPETITION DETECTED - Retry {attempts}/{max_retries}]")
+            
+            if attempts < max_retries:
+                updated_sysprompt = sys_prompt+ f"\n\n[CRITICAL: Generate COMPLETELY NEW response. NO repetition of previous answers.]"
+                msg = safe_invoke_llm(llm, [SystemMessage(content=updated_sysprompt)] + chat_history)
+            else:
+                print("[GIVING UP AFTER 3 RETRIES - Using last response]")
         
         formatted_output = self.json_format.refine(msg.content)
         try:

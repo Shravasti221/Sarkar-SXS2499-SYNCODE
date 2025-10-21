@@ -1,14 +1,12 @@
 import json
-from typing import Dict, Any
 from expert import Expert
-from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from IPython.display import Image, display
 import json, os
 from orchestrator import Orchestrator 
 from simulators import problem_creator_llm, user_llm, user_route
 from api_execution import APIPipeline
-from helpers import EventState
+from utils.helpers import EventState
 #-------------------
 # Build Workflow Graph
 # -----------------------------
@@ -66,13 +64,9 @@ user_next_nodes = {
 workflow.add_conditional_edges("user", user_route, user_next_nodes)
 # ---------------------------------------------------------------------------------------------------------
 
-# Compile workflow
 chain = workflow.compile()
 display(Image(chain.get_graph().draw_mermaid_png()))
 
-# -----------------------------
-# Example run
-# -----------------------------
 chat_history = []
-state = EventState(chat_history=chat_history, problem_created="The 2025 Digital Marketing Summit is scheduled for Nov 24‑26 at the Grand Plaza Conference Center. Day 2’s keynote at 11:30 a.m. will feature Alex Chen, but his MacBook runs MacOS while the venue’s projector only accepts Windows-based files. The IT team hasn’t found a quick compatibility solution, risking a delay for the audience. The event team needs a timely workaround to display the keynote slides.")
-state = chain.invoke(state)
+state = EventState(chat_history=chat_history, problem_created="Generate a problem statement based on the available experts and situation.")
+state = chain.invoke(state)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

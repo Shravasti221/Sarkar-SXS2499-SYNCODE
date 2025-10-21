@@ -1,11 +1,9 @@
 import os
-import json
-import uuid
-
-from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
-from helpers import print_message, EventState, chat_history_to_string
+from utils.helpers import print_message
+from utils.pydantic_objects import EventState
 
 llm = ChatOpenAI(
     model="openai/gpt-oss-20b",
@@ -43,7 +41,7 @@ Output format:
 - **Do NOT include solutions, next steps, hints, or commentary**.
 """
     msgs = [SystemMessage(content = system_prompt)]+state.chat_history
-    print(chat_history_to_string(msgs))
+    # print(chat_history_to_string(msgs))
     msg = llm.invoke(msgs)
     state.problem_created = msg.content
     print_message(state, "ProblemCreatorLLM", msg.content)
