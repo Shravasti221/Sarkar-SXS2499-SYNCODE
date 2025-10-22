@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import TypedDict, List, Dict, Optional, Optional, Literal, Any
 from pydantic import BaseModel, Field, model_validator, field_validator, ConfigDict
 from langchain_core.messages import BaseMessage
@@ -45,6 +46,7 @@ class responseFormat(BaseModel):
 class EventState(BaseModel):
     problem_created: Optional[str] = None
     # chat_history: List[Dict[str, str]] = Field(default_factory=list)
+    ts: str
     chat_history: List[BaseMessage] = []
     api_task: Optional[Dict[str, Any]] = None
     api_result: Optional[dict] = None
@@ -52,10 +54,16 @@ class EventState(BaseModel):
     next: Optional[str] = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+def create_timestamped_file(content: str="") -> str:
+    """Write content to a file."""
+    ts = ".\\converstions\\"+ datetime.now().isoformat(timespec='seconds')+".json"
+    with open(ts, "w", encoding="utf-8") as f:
+        f.write(content)
+    return ts
 
 def save_pydantic_object(obj: BaseModel, filepath: str):
     """Save a Pydantic model instance to a JSON file."""
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(filepath, "r+", encoding="utf-8") as f:
         json.dump(obj.model_dump(), f, indent=4)
 
 def load_pydantic_object(model_class, filepath: str):

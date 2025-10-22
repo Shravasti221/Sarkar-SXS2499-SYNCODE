@@ -6,7 +6,7 @@ from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, Human
 from utils.helpers import print_message
 from utils.llm import llm
 from utils.safe_invoke_llm import safe_invoke_llm
-from utils.pydantic_objects import responseFormat
+from utils.pydantic_objects import responseFormat, writePydanticObject
 from utils.json_format import JsonFormat
 from utils.detect_repetition import check_repetition
 
@@ -173,13 +173,12 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
 
     def node_fn(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Update state with LLM output (always return dict)."""
-        prompt = self.build_orchestrator_prompt(state)
+        sys_prompt = self.build_orchestrator_prompt(state)
         # print("\n========== ORCHESTRATOR DEBUG ==========")
         # print("Prompt to LLM:\n", prompt[:800], "...\n")
         print("[Orchestrator IP] Chat history length:", len(state.chat_history))
         
-        prompt = self.build_orchestrator_prompt(state)
-        msg = safe_invoke_llm(llm,[SystemMessage(content =  prompt)] + state.chat_history)
+        msg = safe_invoke_llm(llm,[SystemMessage(content =  sys_prompt)] + state.chat_history)
         attempts = 0
         max_retries = 3
 
@@ -192,7 +191,7 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
             
             if attempts < max_retries:
                 updated_sysprompt = sys_prompt+ f"\n\n[CRITICAL: Generate COMPLETELY NEW response. NO repetition of previous answers.]"
-                msg = safe_invoke_llm(llm, [SystemMessage(content=updated_sysprompt)] + chat_history)
+                msg = safe_invoke_llm(llm, [SystemMessage(content=updated_sysprompt)] + state.chat_history)
             else:
                 print("[GIVING UP AFTER 3 RETRIES - Using last response]")
         print_message(state, self.name, msg.content)
@@ -243,4 +242,5 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
         Interpret the LLM output (msg_content) and mutate `state` appropriately.
         Returns a small dict with the next action, e.g. {"next": "api_execution"} or {"next": "<expert_name>"}.
         """
+        writePydanticObject(state, state.ts)
         return state.next

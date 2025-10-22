@@ -7,6 +7,7 @@ from orchestrator import Orchestrator
 from simulators import problem_creator_llm, user_llm, user_route
 from api_execution import APIPipeline
 from utils.helpers import EventState
+from utils.pydantic_objects import create_timestamped_file
 #-------------------
 # Build Workflow Graph
 # -----------------------------
@@ -68,5 +69,5 @@ chain = workflow.compile()
 display(Image(chain.get_graph().draw_mermaid_png()))
 
 chat_history = []
-state = EventState(chat_history=chat_history, problem_created="Generate a problem statement based on the available experts and situation.")
+state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created="Generate a problem statement based on the available experts and situation.")
 state = chain.invoke(state)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
