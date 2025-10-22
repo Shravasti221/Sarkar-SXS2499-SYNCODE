@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from typing import TypedDict, List, Dict, Optional, Optional, Literal, Any
 from pydantic import BaseModel, Field, model_validator, field_validator, ConfigDict
@@ -63,7 +64,9 @@ def create_timestamped_file(content: str="") -> str:
 
 def save_pydantic_object(obj: BaseModel, filepath: str):
     """Save a Pydantic model instance to a JSON file."""
-    with open(filepath, "r+", encoding="utf-8") as f:
+    if not os.path.exists(str):
+        raise FileNotFoundError(f"{str} does not exist")
+    with open(filepath, "w", encoding="utf-8") as f:
         json.dump(obj.model_dump(), f, indent=4)
 
 def load_pydantic_object(model_class, filepath: str):
