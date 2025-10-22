@@ -2,7 +2,7 @@ import json
 import uuid
 from utils.llm import llm
 from utils.pydantic_objects import EventState, responseFormat, write_pydantic_object
-from safe_invoke_llm import safe_invoke_llm
+from utils.safe_invoke_llm import safe_invoke_llm
 from langchain_core.messages import SystemMessage, ToolMessage, AIMessage
 from utils.json_format import JsonFormat
 from utils.detect_repetition import check_repetition

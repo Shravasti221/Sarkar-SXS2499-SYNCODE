@@ -1,6 +1,6 @@
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage
 from typing import List
-from pydantic_objects import EventState
+from utils.pydantic_objects import EventState
 # -----------------------------
 # Helper function for logging
 # -----------------------------

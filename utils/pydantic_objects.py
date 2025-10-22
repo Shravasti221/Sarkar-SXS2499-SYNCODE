@@ -55,17 +55,19 @@ class EventState(BaseModel):
     next: Optional[str] = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-def create_timestamped_file(content: str="") -> str:
-    """Write content to a file."""
-    ts = ".\\converstions\\"+ datetime.now().isoformat(timespec='seconds')+".json"
-    with open(ts, "w", encoding="utf-8") as f:
+def create_timestamped_file(content: str = "") -> str:
+    """Write content to a timestamped file in 'conversations/' folder."""
+    os.makedirs("conversations", exist_ok=True)  # ensure directory exists
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # safe format
+    filepath = os.path.join("conversations", f"{timestamp}.json")
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
-    return ts
+    return filepath
 
 def write_pydantic_object(obj: BaseModel, filepath: str):
     """Save a Pydantic model instance to a JSON file."""
-    if not os.path.exists(str):
-        raise FileNotFoundError(f"{str} does not exist")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"{filepath} does not exist")
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(obj.model_dump(), f, indent=4)
 
