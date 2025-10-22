@@ -62,7 +62,7 @@ def create_timestamped_file(content: str="") -> str:
         f.write(content)
     return ts
 
-def save_pydantic_object(obj: BaseModel, filepath: str):
+def write_pydantic_object(obj: BaseModel, filepath: str):
     """Save a Pydantic model instance to a JSON file."""
     if not os.path.exists(str):
         raise FileNotFoundError(f"{str} does not exist")

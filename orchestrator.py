@@ -6,7 +6,7 @@ from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, Human
 from utils.helpers import print_message
 from utils.llm import llm
 from utils.safe_invoke_llm import safe_invoke_llm
-from utils.pydantic_objects import responseFormat, writePydanticObject
+from utils.pydantic_objects import responseFormat, write_pydantic_object
 from utils.json_format import JsonFormat
 from utils.detect_repetition import check_repetition
 
@@ -242,5 +242,5 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
         Interpret the LLM output (msg_content) and mutate `state` appropriately.
         Returns a small dict with the next action, e.g. {"next": "api_execution"} or {"next": "<expert_name>"}.
         """
-        writePydanticObject(state, state.ts)
+        write_pydantic_object(state, state.ts)
         return state.next

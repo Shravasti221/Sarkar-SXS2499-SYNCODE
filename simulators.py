@@ -3,7 +3,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
 from utils.helpers import print_message
-from utils.pydantic_objects import EventState, writePydanticObject
+from utils.pydantic_objects import EventState, write_pydantic_object
 # -----------------------------
 
 llm = ChatOpenAI(
@@ -97,6 +97,6 @@ Output: a single user message in plain English.
 
 def user_route(state: EventState) -> str:
     """Decides next node after User"""
-    writePydanticObject(state, state.ts)
+    write_pydantic_object(state, state.ts)
     return state.next
     
