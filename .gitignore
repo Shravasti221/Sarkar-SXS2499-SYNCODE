@@ -1,3 +1,6 @@
 .env
 test*
 credentials/
+ExpertJsonGenerator/
+Synthetic Datasets/
+__pycache__/
