@@ -75,11 +75,13 @@ def select_diverse_trajectories_jaccard(
                     else:
                         reject = True
                 else:
-                    if rng.random() < (1 - keep_higher_entropy_prob):
+                    if rng.random() < keep_higher_entropy_prob:
+                        reject = True
+                    else:
+                        # Replace old
                         selected_idx[sel_pos] = idx
                         selected_sigs[sel_pos] = traj_sig
-                    else:
-                        reject = True
+                        
                 break  # only one conflict needed
 
         if not reject:
