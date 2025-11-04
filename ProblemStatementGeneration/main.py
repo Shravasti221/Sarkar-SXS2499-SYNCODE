@@ -16,14 +16,18 @@ API Graph Trajectory Entropy Ranker
 import random 
 import numpy as np
 import torch
-from graph_sampling.sample_graph import build_graph, load_experts, compute_embeddings_for_meta
+from graph_sampling.utils import (
+    load_experts, 
+    save_results_csv,
+    normalize_api_structure
+)
 from graph_sampling.sample_graph import (
+    build_graph, 
+    compute_embeddings_for_meta,
     generate_and_score,
-    select_diverse_trajectories_jaccard,
-    save_results_csv
+    select_diverse_trajectories_jaccard
 )
 from graph_sampling.params import RANDOM_SEED
-from graph_sampling.utils import normalize_api_structure, load_experts
 from trajectory_validation.io_matching import validate_trajectory
 
 EXPERTS_JSON_PATH = "experts_Event Management Company.json"

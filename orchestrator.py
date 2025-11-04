@@ -103,7 +103,7 @@ class Orchestrator:
         """Build the system prompt for the Orchestrator LLM."""
         BASE_PROMPT = ""
         if most_recent_chat:
-            if isinstance(most_recent_chat, (AIMessage, ToolMessage)):
+            if isinstance(state.chat_history[-1], (AIMessage, ToolMessage)):
                 BASE_PROMPT = f"""
 You are the Orchestrator Agent.
 You have just received a message from an Expert.
@@ -142,7 +142,7 @@ Allowed Expert Names: {experts_keys_bar}
 Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to the templates above. No prose, no markdown, no extra characters.
 """.strip()
      
-            elif isinstance(most_recent_chat, (HumanMessage)):
+            elif isinstance(state.chat_history[-1], (HumanMessage)):
                 # removed ability to give generic advice on unavailable tools like google calendar notifications, projector set up, etc.
                 # as quality was low and often led to meaningless conversations.
                 BASE_PROMPT = f"""

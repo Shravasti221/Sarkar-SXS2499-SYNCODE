@@ -4,7 +4,7 @@ import json
 import numpy as np
 from typing import List, Dict, Tuple, Any
 from tqdm import tqdm
-from utils import Embedder, api_to_embeddings, safe_cosine
+from trajectory_validation.utils import Embedder, api_to_embeddings, safe_cosine
 # =============================================
 # CONFIGURATION
 # =============================================

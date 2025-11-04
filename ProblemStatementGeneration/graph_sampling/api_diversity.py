@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import random
 from typing import List, Tuple, Dict, Any
-from ProblemStatementGeneration.graph_sampling.params import RANDOM_SEED
+from graph_sampling.params import RANDOM_SEED
 
 def select_diverse_trajectories_jaccard(
     G: nx.DiGraph,
@@ -75,12 +75,11 @@ def select_diverse_trajectories_jaccard(
                     else:
                         reject = True
                 else:
-                    if rng.random() < keep_higher_entropy_prob:
-                        reject = True
-                    else:
-                        # Replace old
+                    if rng.random() < (1 - keep_higher_entropy_prob):
                         selected_idx[sel_pos] = idx
                         selected_sigs[sel_pos] = traj_sig
+                    else:
+                        reject = True
                 break  # only one conflict needed
 
         if not reject:

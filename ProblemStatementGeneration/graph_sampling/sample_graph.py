@@ -11,8 +11,8 @@ import networkx as nx
 from sentence_transformers import SentenceTransformer
 import torch
 import warnings
-from helpers import split_at_capitals, find_csv_columns
-from params import SENTENCE_MODEL, RANDOM_SEED, WEIGHT_DISSIM, WEIGHT_LENGTH, WEIGHT_EXPERT, LOOP_PENALTY_SCALE, MAX_LEN_NORM
+from graph_sampling.utils import split_at_capitals, find_csv_columns
+from graph_sampling.params import SENTENCE_MODEL, RANDOM_SEED, WEIGHT_DISSIM, WEIGHT_LENGTH, WEIGHT_EXPERT, LOOP_PENALTY_SCALE, MAX_LEN_NORM
 warnings.filterwarnings("ignore")
 
 # ----------------------------
