@@ -200,7 +200,6 @@ def _global_inv_centrality(G: nx.DiGraph) -> Dict[str, float]:
 
 def entropy_function(
     traj: List[str], G: nx.DiGraph, emb_map: Dict[str, np.ndarray],
-    INV_CENTRALITY: Dict[str, float],
     api_meta: Dict[str, Dict], *,
     weight_dissim=WEIGHT_DISSIM, weight_length=WEIGHT_LENGTH,
     weight_expert=WEIGHT_EXPERT, loop_penalty_scale=LOOP_PENALTY_SCALE,
@@ -270,11 +269,12 @@ def generate_and_score(
     starts = sample_start_nodes_unique(G, n_start)
     print(f"[generate] sampled {len(starts)} start nodes")
     results: List[Tuple[List[str], float]] = []
-    INV_CENTRALITY = _global_inv_centrality(G)
+    global INV_CENTRALITY 
+    INV_CENTRALITY= _global_inv_centrality(G)
     for idx, s in enumerate(starts):
         # for each start, generate multiple trajectories
         for _ in range(traj_per_node):
-            traj = full_trajectory_from_start(G, s, INV_CENTRALITY=INV_CENTRALITY, p_stop=p_stop, max_back=max_back, max_fwd=max_fwd, rng=rng)
+            traj = full_trajectory_from_start(G, s, p_stop=p_stop, max_back=max_back, max_fwd=max_fwd, rng=rng)
             score = entropy_function(traj, G, emb_map, api_meta)
             results.append((traj, score))
     # sort descending

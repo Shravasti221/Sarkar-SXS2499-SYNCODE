@@ -4,6 +4,7 @@ import json
 import numpy as np
 from typing import List, Dict, Tuple, Any
 from tqdm import tqdm
+import traceback
 from trajectory_validation.utils import Embedder, api_to_embeddings, safe_cosine
 # =============================================
 # CONFIGURATION
@@ -141,38 +142,116 @@ def validate_trajectory(
     trajectory: List[Tuple[List[Any], float]],
     all_apis: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
+    print("[validate_trajectory] START", flush=True)
+    print(f"[validate_trajectory] trajectory length: {len(trajectory)}", flush=True)
+    print(f"[validate_trajectory] all_apis length: {len(all_apis)}", flush=True)
+
     api_lookup = {api['name']: api for api in all_apis}
     api_name_map = {api['name']: api['name'] for api in all_apis}
+    print(f"[validate_trajectory] Built api_lookup with {len(api_lookup)} entries", flush=True)
 
     def clean_name(x) -> str:
         s = str(x)
         m = re.match(r"^np\.str_\(['\"](.*)['\"]\)$", s)
-        return m.group(1) if m else s.strip()
+        cleaned = m.group(1) if m else s.strip()
+        print(f"[clean_name] raw: {s} -> cleaned: {cleaned}", flush=True)
+        return cleaned
 
-    embedder = Embedder()
+    # instantiate embedder (may raise) — print around it
+    try:
+        print("[validate_trajectory] Instantiating Embedder...", flush=True)
+        embedder = Embedder()
+        print("[validate_trajectory] Embedder instantiated", flush=True)
+    except Exception as e:
+        print("[validate_trajectory] ERROR instantiating Embedder:", e, flush=True)
+        traceback.print_exc()
+        raise
+
     results = []
+    if len(trajectory) < 2:
+        print("[validate_trajectory] Trajectory has fewer than 2 elements, returning empty results", flush=True)
+        return results
 
-    for i in tqdm(range(len(trajectory) - 1), desc="Validating trajectory pairs"):
-        pred_group, _ = trajectory[i]
-        succ_group, _ = trajectory[i + 1]
+    # We'll iterate pairs (i, i+1)
+    total_pairs = len(trajectory) - 1
+    print(f"[validate_trajectory] Validating {total_pairs} trajectory pairs", flush=True)
 
-        pred_names = [clean_name(n) for n in pred_group]
-        succ_names = [clean_name(n) for n in succ_group]
+    for i in tqdm(range(total_pairs), desc="Validating trajectory pairs"):
+        try:
+            print("\n" + "="*60, flush=True)
+            print(f"[loop] i={i}", flush=True)
+            pred_group, pred_score = trajectory[i]
+            succ_group, succ_score = trajectory[i + 1]
 
-        pred_apis = [api_lookup[n] for n in pred_names if n in api_lookup]
-        succ_apis = [api_lookup[n] for n in succ_names if n in api_lookup]
+            print(f"[loop] predecessor raw group (index {i}): {pred_group} (score={pred_score})", flush=True)
+            print(f"[loop] successor raw group (index {i+1}): {succ_group} (score={succ_score})", flush=True)
 
-        if not pred_apis or not succ_apis:
+            # Clean names
+            pred_names = [clean_name(n) for n in pred_group]
+            succ_names = [clean_name(n) for n in succ_group]
+            print(f"[loop] predecessor cleaned names: {pred_names}", flush=True)
+            print(f"[loop] successor cleaned names: {succ_names}", flush=True)
+
+            # Lookup APIs
+            pred_apis = [api_lookup[n] for n in pred_names if n in api_lookup]
+            succ_apis = [api_lookup[n] for n in succ_names if n in api_lookup]
+            missing_pred = [n for n in pred_names if n not in api_lookup]
+            missing_succ = [n for n in succ_names if n not in api_lookup]
+
+            print(f"[loop] matched pred_apis count: {len(pred_apis)}; missing_pred: {missing_pred}", flush=True)
+            print(f"[loop] matched succ_apis count: {len(succ_apis)}; missing_succ: {missing_succ}", flush=True)
+
+            if not pred_apis or not succ_apis:
+                print("[loop] One of pred_apis or succ_apis is empty — preparing empty-match result", flush=True)
+                # Show succ_apis params for debugging (may be empty)
+                try:
+                    succ_params = []
+                    for api in succ_apis:
+                        p = api.get("params", {})
+                        print(f"[loop] succ api '{api.get('name')}' params (raw): {p}", flush=True)
+                        # If params is dict, list out items to make clear what's inside
+                        if isinstance(p, dict):
+                            print(f"[loop] succ api '{api.get('name')}' params keys: {list(p.keys())}", flush=True)
+                        succ_params.extend(p if isinstance(p, list) else list(p))
+                except Exception as e:
+                    print("[loop] ERROR while extracting succ_apis params:", e, flush=True)
+                    traceback.print_exc()
+
+                results.append({
+                    "predecessor": pred_names,
+                    "successor": succ_names,
+                    "matches": [],
+                    "user_inputs": [p for api in succ_apis for p in api.get("params", {})]
+                })
+                print(f"[loop] Appended empty-match result for pair i={i}", flush=True)
+                continue
+
+            print("[loop] Calling validate_api_pair(...) with pred_apis and succ_apis", flush=True)
+            try:
+                result = validate_api_pair(pred_apis, succ_apis, embedder, api_name_map)
+                print(f"[loop] validate_api_pair returned: {result}", flush=True)
+            except Exception as e:
+                print("[loop] ERROR in validate_api_pair:", e, flush=True)
+                traceback.print_exc()
+                # attach debug info and continue
+                result = {"matches": [], "error": str(e)}
+
+            # attach predecessor/successor info to result
+            result.update({"predecessor": pred_names, "successor": succ_names})
+            print(f"[loop] Final result for pair i={i}: {result}", flush=True)
+            results.append(result)
+
+        except Exception as e:
+            print(f"[loop] Unexpected ERROR processing pair i={i}:", e, flush=True)
+            traceback.print_exc()
+            # Optionally append an error result so caller can see which pair failed
             results.append({
-                "predecessor": pred_names,
-                "successor": succ_names,
+                "predecessor": pred_group if 'pred_group' in locals() else None,
+                "successor": succ_group if 'succ_group' in locals() else None,
                 "matches": [],
-                "user_inputs": [p for api in succ_apis for p in api.get("params", {})]
+                "error": f"Exception at pair {i}: {e}"
             })
-            continue
 
-        result = validate_api_pair(pred_apis, succ_apis, embedder, api_name_map)
-        result.update({"predecessor": pred_names, "successor": succ_names})
-        results.append(result)
-
+    print("="*60, flush=True)
+    print(f"[validate_trajectory] DONE — produced {len(results)} results", flush=True)
     return results
