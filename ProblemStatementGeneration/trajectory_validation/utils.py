@@ -4,12 +4,19 @@ import numpy as np
 from typing import List, Dict, Tuple, Any
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"
 BATCH_SIZE = 64
 EPS = 1e-12
-# =============================================
-# UTILITIES
-# =============================================
+
+
+
+def split_at_capitals(word):
+    return " ".join(re.findall(r'[A-Z][^A-Z]*', word))
+
+def cosine(a, b):
+    return cosine_similarity([a], [b])[0,0]
+
 def split_param_name(name: str) -> str:
     """Convert camelCase/snake_case → space-separated lowercase."""
     if not name:

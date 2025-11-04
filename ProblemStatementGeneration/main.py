@@ -23,6 +23,10 @@ from graph_sampling.sample_graph import (
     save_results_csv
 )
 from graph_sampling.params import RANDOM_SEED
+from graph_sampling.utils import normalize_api_structure, load_experts
+from trajectory_validation.io_matching import validate_trajectory
+
+EXPERTS_JSON_PATH = "experts_Event Management Company.json"
 def main(
     experts_json_path: str = "experts_Event Management Company.json",
     weights_csv_path: str = "eventManagement_apigraph_weights.csv",
@@ -88,3 +92,8 @@ if __name__ == "__main__":
         traj_per_node=3,
         p_stop=0.25
     )
+    
+    all_apis = []
+    for key, value in normalize_api_structure(load_experts(EXPERTS_JSON_PATH)).items():
+        all_apis+= [{"name": i["APIName"], "params":i["params"], "description": i["description"], "output":i["output"], "expert": key} for i in value["apis"]]
+    results = validate_trajectory(trajectories[:4], all_apis)
