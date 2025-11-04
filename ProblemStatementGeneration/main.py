@@ -24,9 +24,9 @@ from graph_sampling.utils import (
 from graph_sampling.sample_graph import (
     build_graph, 
     compute_embeddings_for_meta,
-    generate_and_score,
-    select_diverse_trajectories_jaccard
+    generate_and_score
 )
+from graph_sampling.api_diversity import select_diverse_trajectories_jaccard
 from graph_sampling.params import RANDOM_SEED
 from trajectory_validation.io_matching import validate_trajectory
 

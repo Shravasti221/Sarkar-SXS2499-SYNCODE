@@ -172,12 +172,7 @@ def full_trajectory_from_start(G: nx.DiGraph, start: str, p_stop: float=0.25, ma
     """
     back = backward_to_root(G, start, rng=rng, max_steps=max_back)
     fwd = forward_random_walk(G, start, p_stop=p_stop, max_steps=max_fwd, rng=rng)
-    # combine: back (may be []) + fwd
-    if back and back[-1] == start:
-        combined = back + fwd[1:]
-    else:
-        # ensure start present once
-        combined = back + fwd
+    combined = back + fwd
     return combined
 
 # ----------------------------
@@ -205,6 +200,7 @@ def _global_inv_centrality(G: nx.DiGraph) -> Dict[str, float]:
 
 def entropy_function(
     traj: List[str], G: nx.DiGraph, emb_map: Dict[str, np.ndarray],
+    INV_CENTRALITY: Dict[str, float],
     api_meta: Dict[str, Dict], *,
     weight_dissim=WEIGHT_DISSIM, weight_length=WEIGHT_LENGTH,
     weight_expert=WEIGHT_EXPERT, loop_penalty_scale=LOOP_PENALTY_SCALE,
@@ -212,9 +208,6 @@ def entropy_function(
 ) -> float:
     if len(traj) <= 1:
         return 0.0
-    
-    # call once after graph construction:
-    INV_CENTRALITY = _global_inv_centrality(G)
     
     # ---- 1. dissimilarity (centrality weighted) ----
     inv_w = [INV_CENTRALITY.get(n, 0.0) for n in traj]
@@ -277,10 +270,11 @@ def generate_and_score(
     starts = sample_start_nodes_unique(G, n_start)
     print(f"[generate] sampled {len(starts)} start nodes")
     results: List[Tuple[List[str], float]] = []
+    INV_CENTRALITY = _global_inv_centrality(G)
     for idx, s in enumerate(starts):
         # for each start, generate multiple trajectories
         for _ in range(traj_per_node):
-            traj = full_trajectory_from_start(G, s, p_stop=p_stop, max_back=max_back, max_fwd=max_fwd, rng=rng)
+            traj = full_trajectory_from_start(G, s, INV_CENTRALITY=INV_CENTRALITY, p_stop=p_stop, max_back=max_back, max_fwd=max_fwd, rng=rng)
             score = entropy_function(traj, G, emb_map, api_meta)
             results.append((traj, score))
     # sort descending
