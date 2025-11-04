@@ -203,9 +203,6 @@ def _global_inv_centrality(G: nx.DiGraph) -> Dict[str, float]:
     total = sum(inv.values())
     return {n: w / total for n, w in inv.items()}
 
-# call once after graph construction:
-INV_CENTRALITY = _global_inv_centrality(G)
-
 def entropy_function(
     traj: List[str], G: nx.DiGraph, emb_map: Dict[str, np.ndarray],
     api_meta: Dict[str, Dict], *,
@@ -215,7 +212,10 @@ def entropy_function(
 ) -> float:
     if len(traj) <= 1:
         return 0.0
-
+    
+    # call once after graph construction:
+    INV_CENTRALITY = _global_inv_centrality(G)
+    
     # ---- 1. dissimilarity (centrality weighted) ----
     inv_w = [INV_CENTRALITY.get(n, 0.0) for n in traj]
     total_w = sum(inv_w)

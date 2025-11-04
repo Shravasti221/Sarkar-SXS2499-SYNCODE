@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 API Graph Trajectory Entropy Ranker
 
@@ -14,7 +13,16 @@ API Graph Trajectory Entropy Ranker
     4) number of distinct experts (more -> higher)
 - Output: CSV with ranked trajectories
 """
-
+import random 
+import numpy as np
+import torch
+from graph_sampling.sample_graph import build_graph, load_experts, compute_embeddings_for_meta
+from graph_sampling.sample_graph import (
+    generate_and_score,
+    select_diverse_trajectories_jaccard,
+    save_results_csv
+)
+from graph_sampling.params import RANDOM_SEED
 def main(
     experts_json_path: str = "experts_Event Management Company.json",
     weights_csv_path: str = "eventManagement_apigraph_weights.csv",
