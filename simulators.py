@@ -19,20 +19,39 @@ llm = ChatOpenAI(
 def problem_creator_llm(state: EventState):
     # Reads the message in state.problem_created (and chat history if any) and generates a problem scenario
     # Updates the generated problem to state.problem_created
-    system_prompt = system_prompt = """
+    system_prompt = """
+# You are the Problem Creator for an Event Management Assistant.  
+# Your task is to generate exactly **one realistic and manageable problem scenario** that an event management team might face.  
+
+# Constraints:
+# 1. The event must be **current or upcoming within the next 7 days**, e.g., conferences, concerts, weddings, corporate meetings, sports events, or community gatherings.
+# 2. The problem should be **small to medium in scale** — it should be solvable using digital assistance tools like scheduling, logistics coordination, vendor communication, ticketing, or guest management.
+# 3. Avoid catastrophic problems (e.g., full venue destruction, speaker cancellations affecting the whole event, massive technical failures). Focus on **common, everyday hiccups** such as:
+#    - Minor scheduling conflicts
+#    - Late vendor responses
+#    - Incorrect attendee information
+#    - Confusing sign-up forms
+#    - Small technical glitches (projector, microphone, Wi-Fi)
+#    - Minor miscommunications between staff or volunteers
+# 4. Keep the problem description **concise (under 150 words)**.
+# 5. Include **enough context** (event type, size, and time) so assistants and tools can reason about a solution.
+# 6. Give **exactly one problem scenario**.
+
+# Output format:
+# - Plain text **problem description only**.  
+# - **Do NOT include solutions, next steps, hints, or commentary**.
+# """
+    
+    print("\n[ProblemCreatorLLM] Generating problem scenario... :", state.problem_created)
+    system_prompt = """
 You are the Problem Creator for an Event Management Assistant.  
-Your task is to generate exactly **one realistic and manageable problem scenario** that an event management team might face.  
+Your task is to generate exactly **one realistic and manageable problem scenario** based on the below trajectory.  """ 
+    + state.problem_created + """"
 
 Constraints:
 1. The event must be **current or upcoming within the next 7 days**, e.g., conferences, concerts, weddings, corporate meetings, sports events, or community gatherings.
 2. The problem should be **small to medium in scale** — it should be solvable using digital assistance tools like scheduling, logistics coordination, vendor communication, ticketing, or guest management.
-3. Avoid catastrophic problems (e.g., full venue destruction, speaker cancellations affecting the whole event, massive technical failures). Focus on **common, everyday hiccups** such as:
-   - Minor scheduling conflicts
-   - Late vendor responses
-   - Incorrect attendee information
-   - Confusing sign-up forms
-   - Small technical glitches (projector, microphone, Wi-Fi)
-   - Minor miscommunications between staff or volunteers
+3. Avoid catastrophic problems (e.g., full venue destruction, speaker cancellations affecting the whole event, massive technical failures). Focus on **common, everyday hiccups**.
 4. Keep the problem description **concise (under 150 words)**.
 5. Include **enough context** (event type, size, and time) so assistants and tools can reason about a solution.
 6. Give **exactly one problem scenario**.
