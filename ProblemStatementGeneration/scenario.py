@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 
-from graph_sampling.utils import load_experts
+from .graph_sampling.utils import load_experts
 
 
 def safe_invoke_llm(llm, messages, max_retries=3, retry_delay=3, **kwargs):
@@ -147,29 +147,6 @@ class Scenario(TypedDict):
     hints: list[str]  # e.g., ["Consider the event date and location...", ...]
     steps_with_hints: dict[tuple, str]  # e.g., {(1, 'fetchEventDetails', 'searchVenues'): "hint"}
 
-# ------------------------------
-# API-scenario mapping
-# ------------------------------
-EXPERTS_JSON_PATH = "/content/experts_Event Management Company Simplified.json"
-G = build_nx_graph_from_csv("/content/api_graph.csv")
-trajectories = generate_trajectories_for_sampled_nodes(G, 10, p_stop=0.3, rejection_prob=0.95)
-
-apis = load_experts(EXPERTS_JSON_PATH)
-all_scenarios = []
-for trajectory in trajectories:
-    scenario_apis = [(api_name, apis[api_name]) for api_name in trajectory]
-    if scenario_apis:
-        scenario = Scenario(
-            problem_statement=["Generated scenario from trajectory"],
-            steps=scenario_apis,
-            hints=[],
-            steps_with_hints={(i, scenario_apis[i][0], scenario_apis[i+1][0]): ""
-                              for i in range(len(scenario_apis)-1)}
-        )
-        scenario["steps_with_hints"][(0, "start_dialogue", scenario_apis[0][0])] = ""
-        all_scenarios.append(scenario)
-
-
 def reduce_list(left: list | None, right: list | dict | None) -> list:
     left = left or []
     
@@ -198,29 +175,6 @@ class State(TypedDict):
 def stage1_prompt(scenario: Scenario) -> tuple[str, str]:
   SYSTEM_PROMPT = """You are the creative director of a scriptwriting company.
   Your role is to take a list of API calls and create a coherent scenario that uses all of them in order."""
-  # Always return an array of strings."""
-
-  #     HINT_GENERATION_PROMPT = f"""You are a creative director for a scriptwriting company. Your task is to create a **complete scenario** that uses a sequence of API calls.
-  # You are given the following scenario information:
-  # * **Steps (API calls to use in order):**
-  # {scenario['steps']}
-
-  # * **Step-to-hint mapping (for guidance between steps):**
-  # {scenario['steps_with_hints']}
-
-  # **Your task:**
-  # 1. Generate a coherent scenario or storyline that **uses all of the API calls in the order specified** by `{scenario['steps']}`.
-  # 2. For each transition between steps as defined in `{list(scenario['steps_with_hints'].keys())}`, generate a **helpful hint**.
-  # 3. Return your answer **only as an array of hints** in this format:
-
-  # ["hint0 (start_dialogue)", "hint1", "hint2", "hint3", ...]
-
-  # **Rules:**
-  # * Do not include extra text, explanations, or formatting—only the array of hints.
-  # * Each hint should correspond exactly to the transitions between consecutive steps.
-  # * Hints should be creative, clear, and actionable within the scenario context.
-
-  # hints = """
 
   HINT_GENERATION_PROMPT = f"""You are a creative director for a scriptwriting company. Your task is to create a complete scenario that uses a sequence of API calls.
   You are given the following scenario information:
@@ -244,31 +198,6 @@ def stage1_prompt(scenario: Scenario) -> tuple[str, str]:
   Scenario: """
 
   return SYSTEM_PROMPT, HINT_GENERATION_PROMPT
-
-# def eval_stage_prompt(scenario: Scenario) -> tuple[str, str]:
-#     SYSTEM_PROMPT = """You are a pipeline flow evaluator.
-# Given a pair of API calls and the hint between them, evaluate if moving from API1 to API2 is logically consistent according to the hint.
-# Return only 1 if valid, 0 if invalid."""
-
-#     USER_PROMPT = f"""You are given the following scenario:
-# * Steps: {scenario['steps']}
-# * Hints: {scenario['hints']}
-
-# For each consecutive pair of APIs (api1, api2) with the corresponding hint:
-# - Output 1 if moving from api1 to api2 logically follows according to the hint.
-# - Output 0 if it does not.
-
-# Return your answer as an array of 1s and 0s matching the order of step transitions, e.g.:
-
-# [1, 0, 1]
-# """
-
-#     return SYSTEM_PROMPT, USER_PROMPT
-
-
-# ------------------------------
-# Scene generator
-# ------------------------------
 
 def fetch_scene_node(state: State):
     return state
@@ -323,7 +252,29 @@ def scene_generator_3(state: State):
 # Build graph
 # ------------------------------
 
-def generate_problem_statement(scenario: Scenario) -> Scenario:
+# ------------------------------
+# API-scenario mapping
+# ------------------------------
+
+def generate_problem_statement(EXPERTS_JSON_PATH="experts_Event Management Company Simplified.json", API_GRAPH_PATH="api_graph.csv") -> Scenario:
+    
+    G = build_nx_graph_from_csv(API_GRAPH_PATH)
+    trajectories = generate_trajectories_for_sampled_nodes(G, 10, p_stop=0.3, rejection_prob=0.95)
+
+    apis = load_experts(EXPERTS_JSON_PATH)
+    all_scenarios = []
+    for trajectory in trajectories:
+        scenario_apis = [(api_name, apis[api_name]) for api_name in trajectory]
+        if scenario_apis:
+            scenario = Scenario(
+                problem_statement=["Generated scenario from trajectory"],
+                steps=scenario_apis,
+                hints=[],
+                steps_with_hints={(i, scenario_apis[i][0], scenario_apis[i+1][0]): ""
+                                for i in range(len(scenario_apis)-1)}
+            )
+            scenario["steps_with_hints"][(0, "start_dialogue", scenario_apis[0][0])] = ""
+            all_scenarios.append(scenario)
     builder = StateGraph(State)
     builder.add_node("fetch_scene_node", fetch_scene_node)
     builder.add_node("scene_generator_1", scene_generator_1)
@@ -343,5 +294,5 @@ def generate_problem_statement(scenario: Scenario) -> Scenario:
 
     ret_val = graph.invoke(State(scenarios=[scenario]))
     scenario = ret_val["scenarios"][1] 
-    scenario["problem_statement"] = [ret_val["scenarios"][random.choice([2, 3, 4])]["problem_statement"]]
+    scenario["problem_statement"] = [ret_val["scenarios"][i]["problem_statement"] for i in [2, 3, 4]]
     return scenario

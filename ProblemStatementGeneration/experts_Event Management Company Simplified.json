@@ -1,0 +1,496 @@
+{
+  "Event Management and Operations": {
+    "description": "Core APIs for managing events, including creation, lookup, schedule queries, and ticket sales tracking. Useful for daily operations, planning, and coordination.",
+    "expert_prompt": "",
+    "apis": [
+      {
+        "APIName": "createEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/create",
+          "apikey": "string",
+          "event_name": "string",
+          "start_datetime": "string (ISO8601)",
+          "end_datetime": "string (ISO8601)",
+          "venue_id": "string (optional)",
+          "organizer_id": "string (optional)",
+          "category_id": "string (optional)",
+          "description_html": "string (optional)"
+        },
+        "description": "Creates a new event with date, time, venue, organizer, classification and description metadata.",
+        "output": {
+          "event_id": "string",
+          "status": "created|error",
+          "created_at": "string (ISO8601)"
+        }
+      },
+
+      {
+        "APIName": "fetchEventDetails",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}",
+          "apikey": "string",
+          "event_id": "string",
+          "expand": "array (optional)"
+        },
+        "description": "Retrieves full event metadata including schedule, venue, organizer, categories, and optionally expanded fields.",
+        "output": {
+          "event_id": "string",
+          "name": "string",
+          "start_datetime": "string",
+          "end_datetime": "string",
+          "venue_id": "string",
+          "organizer_id": "string",
+          "category_id": "string",
+          "status": "string"
+        }
+      },
+
+      {
+        "APIName": "listAttendeesByEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/attendees",
+          "apikey": "string",
+          "event_id": "string",
+          "page": "integer (optional)",
+          "expand": "array (optional)"
+        },
+        "description": "Returns a paginated list of attendees for a given event, including profile, ticket class, barcodes, and custom question responses.",
+        "output": {
+          "event_id": "string",
+          "page": "integer",
+          "attendees": [
+            {
+              "attendee_id": "string",
+              "created": "datetime",
+              "ticket_class_id": "string",
+              "profile": "object",
+              "barcodes": "array",
+              "checked_in": "boolean"
+            }
+          ]
+        }
+      },
+
+      {
+        "APIName": "retrieveAttendee",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/attendees/{attendee_id}",
+          "apikey": "string",
+          "attendee_id": "string",
+          "expand": "array (optional)"
+        },
+        "description": "Retrieves full attendee metadata such as profile, answers, barcodes, team, affiliate, and assigned seating.",
+        "output": {
+          "attendee_id": "string",
+          "event_id": "string",
+          "order_id": "string",
+          "profile": "object",
+          "ticket_class_name": "string",
+          "barcodes": "array",
+          "checked_in": "boolean"
+        }
+      },
+
+      {
+        "APIName": "createDiscount",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/discounts/create",
+          "apikey": "string",
+          "code": "string",
+          "type": "string (public|coded|access|hold)",
+          "event_id": "string (optional)",
+          "ticket_class_ids": "array (optional)",
+          "amount_off": "decimal (optional)",
+          "percent_off": "decimal (optional)",
+          "quantity_available": "integer (optional)",
+          "start_date": "datetime (optional)",
+          "end_date": "datetime (optional)"
+        },
+        "description": "Creates a discount code applicable to an event or ticket classes with fixed or percentage reduction.",
+        "output": {
+          "discount_id": "string",
+          "status": "created|error"
+        }
+      },
+
+      {
+        "APIName": "retrieveDiscount",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/discounts/{discount_id}",
+          "apikey": "string",
+          "discount_id": "string",
+          "expand": "array (optional)"
+        },
+        "description": "Fetches discount metadata including type, availability, and associated events or ticket groups.",
+        "output": {
+          "discount_id": "string",
+          "code": "string",
+          "type": "string",
+          "quantity_available": "integer",
+          "quantity_sold": "integer"
+        }
+      },
+
+      {
+        "APIName": "retrieveEventCapacity",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/capacity_tier",
+          "apikey": "string",
+          "event_id": "string"
+        },
+        "description": "Retrieves event capacity tiers including holds and their remaining/total inventory values.",
+        "output": {
+          "event_id": "string",
+          "capacity_total": "integer",
+          "holds": [
+            {
+              "id": "string",
+              "name": "string",
+              "quantity_total": "integer"
+            }
+          ]
+        }
+      },
+
+      {
+        "APIName": "updateEventCapacity",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/capacity_tier/update",
+          "apikey": "string",
+          "event_id": "string",
+          "capacity_total": "integer (optional)",
+          "holds": "array (optional)"
+        },
+        "description": "Updates an event's overall capacity and hold tiers. Supports creation, modification, and deletion of hold tiers with constraints.",
+        "output": {
+          "event_id": "string",
+          "status": "updated|error"
+        }
+      },
+
+      {
+        "APIName": "fetchEventSchedule",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{series_parent_event_id}/schedules",
+          "apikey": "string",
+          "series_parent_event_id": "string"
+        },
+        "description": "Fetches the recurrence schedules for a parent series event, including rules that generate event occurrences.",
+        "output": {
+          "series_parent_event_id": "string",
+          "schedules": [
+            {
+              "schedule_id": "string",
+              "frequency": "string",
+              "start_time": "string (ISO8601)"
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "Venue and Accommodation Management": {
+    "description": "APIs for discovering, booking, and managing venues and nearby hotels. Simplified to focus on key planning tasks.",
+    "expert_prompt": "",
+    "apis": [
+      {
+        "APIName": "searchVenues",
+        "params": {
+          "url": "https://api.googleplaces.com/v2/venues/search",
+          "apikey": "string (Google Places key)",
+          "city": "string",
+          "capacity_min": "int (optional)",
+          "capacity_max": "int (optional)",
+          "occasion_type": "string (optional, e.g., wedding, concert, conference)"
+        },
+        "description": "Searches for suitable venues in a city based on capacity or event type.",
+        "output": {
+          "venues": [
+            {
+              "venue_id": "string",
+              "name": "string",
+              "address": "string",
+              "rating": "float",
+              "capacity": "int"
+            }
+          ]
+        }
+      },
+      {
+        "APIName": "fetchVenueDetails",
+        "params": {
+          "url": "https://api.venuefinder.com/v2/venue/{venue_id}",
+          "apikey": "string (VenueFinder API key)",
+          "venue_id": "string"
+        },
+        "description": "Fetches detailed venue information including amenities, location, and availability.",
+        "output": {
+          "venue_id": "string",
+          "name": "string",
+          "address": "string",
+          "capacity": "int",
+          "amenities": "list[string]",
+          "availability": "string (available|booked|maintenance)"
+        }
+      },
+      {
+        "APIName": "bookVenue",
+        "params": {
+          "url": "https://api.venuefinder.com/v2/venues/{venue_id}/book",
+          "apikey": "string (VenueFinder API key)",
+          "venue_id": "string",
+          "event_id": "string",
+          "start_datetime": "string (ISO8601)",
+          "end_datetime": "string (ISO8601)",
+          "payment_token": "string"
+        },
+        "description": "Books a venue for a specific event and date range.",
+        "output": {
+          "booking_id": "string",
+          "status": "string (confirmed|pending|failed)",
+          "confirmation_url": "string"
+        }
+      },
+      {
+        "APIName": "fetchHotels",
+        "params": {
+          "url": "https://api.booking.com/v2/hotels/search",
+          "apikey": "string (Booking.com API key)",
+          "city": "string",
+          "occasion_type": "string (optional)",
+          "min_reviews": "float (optional)",
+          "capacity": "int (optional)"
+        },
+        "description": "Fetches hotels based on city, occasion type, and rating filters for guest accommodation planning.",
+        "output": {
+          "hotels": [
+            {
+              "hotel_id": "string",
+              "name": "string",
+              "address": "string",
+              "rating": "float",
+              "price_per_night": "float"
+            }
+          ]
+        }
+      },
+
+      {
+        "APIName": "getVenueReports",
+        "params": {
+          "url": "https://api.eventsystem.com/v1/venues/reports",
+          "apikey": "string",
+          "venue_id": "integer",
+          "start_date": "string (optional)",
+          "end_date": "string (optional)"
+        },
+        "description": "Returns venue performance metrics such as total bookings, revenue, occupancy rate, and utilization.",
+        "output": {
+          "venue_id": "integer",
+          "total_bookings": "integer",
+          "total_revenue": "decimal",
+          "occupancy_rate": "float",
+          "report_range": "string"
+        }
+      },
+      {
+        "APIName": "getVenueAvailabilityCalendar",
+        "params": {
+          "url": "https://api.venuehub.com/v1/venue/{venue_id}/availability-calendar",
+          "apikey": "string (VenueHub API key)",
+          "venue_id": "string",
+          "month": "string (YYYY-MM)"
+        },
+        "description": "Returns a calendar view of a venue’s booked, available, and blocked dates for a specific month.",
+        "output": {
+          "venue_id": "string",
+          "month": "string",
+          "dates": [
+            {
+              "date": "string (YYYY-MM-DD)",
+              "status": "string (available|booked|blocked)"
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "Communication and Notifications": {
+    "description": "Simplified APIs for communicating with event attendees, sending reminders, or broadcasting messages via SMS or email.",
+    "expert_prompt": "",
+    "apis": [
+      {
+        "APIName": "broadcastMessageToAttendees",
+        "params": {
+          "url": "https://api.twilio.com/v2/events/{event_id}/broadcast",
+          "apikey": "string (Twilio API key)",
+          "event_id": "string",
+          "channel": "string (sms|email)",
+          "message": "string",
+          "ticket_type_filter": "string (optional)"
+        },
+        "description": "Sends a broadcast message to all attendees of a given event, with an optional filter on ticket type (e.g., VIP only).",
+        "output": {
+          "event_id": "string",
+          "recipients_count": "int",
+          "status": "string (queued|sent|failed)"
+        }
+      },
+      {
+        "APIName": "sendEventReminder",
+        "params": {
+          "url": "https://api.twilio.com/v2/messages/send",
+          "apikey": "string (Twilio API key)",
+          "event_id": "string",
+          "recipient": "string (email or phone)",
+          "message_template_id": "string",
+          "send_time": "string (ISO8601, optional)"
+        },
+        "description": "Sends an automated reminder message (email or SMS) to a specific attendee about their upcoming event.",
+        "output": {
+          "message_id": "string",
+          "status": "string (sent|failed)",
+          "sent_at": "string (ISO8601)"
+        }
+      },
+      {
+        "APIName": "updateEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/update",
+          "apikey": "string",
+          "event_id": "string",
+          "name": "string (optional)",
+          "summary": "string (optional)",
+          "description_html": "string (optional)",
+          "currency": "string (optional)",
+          "online_event": "boolean (optional)",
+          "hide_start_date": "boolean (optional)",
+          "hide_end_date": "boolean (optional)",
+          "capacity": "integer (optional)",
+          "capacity_is_custom": "boolean (optional)"
+        },
+        "description": "Updates an event's metadata including name, summary, description, visibility settings, and capacity. If the event is a series parent, some updates cascade to all occurrences.",
+        "output": {
+          "event_id": "string",
+          "status": "updated|error",
+          "changed": "string (ISO8601)"
+        }
+      },
+
+      {
+        "APIName": "publishEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/publish",
+          "apikey": "string",
+          "event_id": "string",
+          "validate_only": "boolean (optional)"
+        },
+        "description": "Publishes an event, making it visible and bookable. Validates that required fields (name, organizer, at least one ticket, description, payment settings) are properly set. Can optionally run in validation-only mode.",
+        "output": {
+          "event_id": "string",
+          "published": "boolean",
+          "published_at": "string (ISO8601, optional)",
+          "errors": "array (optional)"
+        }
+      },
+
+      {
+        "APIName": "unpublishEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/unpublish",
+          "apikey": "string",
+          "event_id": "string"
+        },
+        "description": "Unpublishes an event, making it no longer available to attendees. Has specific constraints depending on whether the event is free, paid, or part of a series.",
+        "output": {
+          "event_id": "string",
+          "unpublished": "boolean",
+          "errors": "array (optional)"
+        }
+      },
+
+      {
+        "APIName": "listEventsByOrganization",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/organizations/{organization_id}/events",
+          "apikey": "string",
+          "organization_id": "string",
+          "status": "string (optional: draft|live|completed|canceled)",
+          "page": "integer (optional)"
+        },
+        "description": "Returns a paginated list of all events owned by a given organization, optionally filtered by the event status.",
+        "output": {
+          "organization_id": "string",
+          "page": "integer",
+          "events": [
+            {
+              "event_id": "string",
+              "name": "string",
+              "status": "string",
+              "start_datetime": "string",
+              "end_datetime": "string"
+            }
+          ]
+        }
+      },
+
+      {
+        "APIName": "copyEvent",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/copy",
+          "apikey": "string",
+          "event_id": "string",
+          "copy_name": "boolean (optional)",
+          "copy_description": "boolean (optional)",
+          "copy_tickets": "boolean (optional)",
+          "copy_settings": "boolean (optional)"
+        },
+        "description": "Creates a duplicate of an existing event, copying payment settings, refund policy, tax settings, and optional metadata like name, description, and tickets.",
+        "output": {
+          "new_event_id": "string",
+          "status": "copied|error"
+        }
+      }
+    ]
+  },
+
+  "Analytics and Insights": {
+    "description": "Provides simple, actionable insights on event performance, attendee demographics, and feedback summaries for post-event analysis.",
+    "expert_prompt": "",
+    "apis": [
+      {
+        "APIName": "fetchEventSummary",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/summary",
+          "apikey": "string (Eventbrite API key)",
+          "event_id": "string"
+        },
+        "description": "Summarizes key event metrics including attendance, revenue, and satisfaction ratings.",
+        "output": {
+          "event_id": "string",
+          "attendees_count": "int",
+          "tickets_sold": "int",
+          "total_revenue": "float",
+          "avg_feedback_score": "float"
+        }
+      },
+      {
+        "APIName": "fetchEventFeedback",
+        "params": {
+          "url": "https://api.surveymonkey.com/v2/feedback",
+          "apikey": "string (SurveyMonkey API key)",
+          "event_id": "string"
+        },
+        "description": "Fetches attendee feedback and survey results for a specific event.",
+        "output": {
+          "event_id": "string",
+          "responses_count": "int",
+          "average_rating": "float",
+          "common_themes": "list[string]"
+        }
+      }
+    ]
+  }
+}
