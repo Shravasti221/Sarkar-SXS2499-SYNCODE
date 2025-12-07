@@ -1,279 +1,496 @@
 {
-  "VenueManager": {
-    "description": "Oversees venue sourcing, layout planning, capacity validation, and booking management across multiple providers.",
-    "expert_prompt": "You are the Venue Manager Agent. You specialize in cross-provider venue discovery, booking coordination, and conflict resolution. Use relevant APIs to compare availability, capacity, and pricing before confirming final decisions.",
-    "apis": {
-      "VenueFinderAPI": {
+  "Event Management and Operations": {
+    "description": "Core APIs for managing events, including creation, lookup, schedule queries, and ticket sales tracking. Useful for daily operations, planning, and coordination.",
+    "expert_prompt": " You are the Event Management & Operations Expert.\nYour role is to guide users through all aspects of event planning and operations, including creating events, managing event details, handling schedules, coordinating logistics, and supporting attendee-related workflows. \n You ensure that all operational steps are clear, consistent, and efficiently executed. \n You request missing information when necessary and always provide structured, unambiguous responses.",
+    "apis": [
+      {
+        "APIName": "createEvent",
         "params": {
-          "url": "https://api.venuefinder.io/v2/list",
-          "apikey": "<YOUR_API_KEY>",
-          "city": "string",
-          "guest_capacity": "int",
-          "date": "YYYY-MM-DD"
+          "url": "https://api.eventbrite.com/v2/events/create",
+          "apikey": "string",
+          "event_name": "string",
+          "start_datetime": "string (ISO8601)",
+          "end_datetime": "string (ISO8601)",
+          "venue_id": "string (optional)",
+          "organizer_id": "string (optional)",
+          "category_id": "string (optional)",
+          "description_html": "string (optional)"
         },
-        "description": "Primary API for searching venues across regions. Supports basic filters and returns summarized metadata."
+        "description": "Creates a new event with date, time, venue, organizer, classification and description metadata.",
+        "output": {
+          "event_id": "string",
+          "status": "created|error",
+          "created_at": "string (ISO8601)"
+        }
       },
-      "BookSpaceAPI": {
+
+      {
+        "APIName": "fetchEventDetails",
         "params": {
-          "url": "https://api.bookspace.app/v1/availability",
-          "token": "<AUTH_TOKEN>",
+          "url": "https://api.eventbrite.com/v2/events/{event_id}",
+          "apikey": "string",
+          "event_id": "string",
+          "expand": "array (optional)"
+        },
+        "description": "Retrieves full event metadata including schedule, venue, organizer, categories, and optionally expanded fields.",
+        "output": {
+          "event_id": "string",
+          "name": "string",
+          "start_datetime": "string",
+          "end_datetime": "string",
           "venue_id": "string",
-          "checkin": "YYYY-MM-DDTHH:MM",
-          "checkout": "YYYY-MM-DDTHH:MM"
-        },
-        "description": "Provides real-time slot-level availability for listed venues."
+          "organizer_id": "string",
+          "category_id": "string",
+          "status": "string"
+        }
       },
-      "HallIQ": {
+
+      {
+        "APIName": "listAttendeesByEvent",
         "params": {
-          "url": "https://halliq.net/api/v1/capacity",
-          "auth_key": "<YOUR_AUTH_KEY>",
-          "venue_ref": "string",
-          "layout_type": "string (theatre|banquet|conference)"
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/attendees",
+          "apikey": "string",
+          "event_id": "string",
+          "page": "integer (optional)",
+          "expand": "array (optional)"
         },
-        "description": "Fetch layout-based capacity and seating recommendations for a venue."
+        "description": "Returns a paginated list of attendees for a given event, including profile, ticket class, barcodes, and custom question responses.",
+        "output": {
+          "event_id": "string",
+          "page": "integer",
+          "attendees": [
+            {
+              "attendee_id": "string",
+              "created": "datetime",
+              "ticket_class_id": "string",
+              "profile": "object",
+              "barcodes": "array",
+              "checked_in": "boolean"
+            }
+          ]
+        }
       },
-      "VenueQuoteAPI": {
+
+      {
+        "APIName": "retrieveAttendee",
         "params": {
-          "url": "https://api.quotespaces.com/v1/pricing",
-          "apikey": "<YOUR_API_KEY>",
-          "venue_code": "string",
-          "hours": "float",
-          "attendees": "int"
+          "url": "https://api.eventbrite.com/v2/attendees/{attendee_id}",
+          "apikey": "string",
+          "attendee_id": "string",
+          "expand": "array (optional)"
         },
-        "description": "Returns estimated rental pricing and surcharges for given usage parameters."
+        "description": "Retrieves full attendee metadata such as profile, answers, barcodes, team, affiliate, and assigned seating.",
+        "output": {
+          "attendee_id": "string",
+          "event_id": "string",
+          "order_id": "string",
+          "profile": "object",
+          "ticket_class_name": "string",
+          "barcodes": "array",
+          "checked_in": "boolean"
+        }
       },
-      "VenueLockAPI": {
+
+      {
+        "APIName": "createDiscount",
         "params": {
-          "url": "https://secure.venueshield.io/v1/hold",
-          "apikey": "<YOUR_API_KEY>",
-          "venue_id": "string",
-          "event_date": "YYYY-MM-DD",
-          "hold_duration_minutes": "int"
+          "url": "https://api.eventbrite.com/v2/discounts/create",
+          "apikey": "string",
+          "code": "string",
+          "type": "string (public|coded|access|hold)",
+          "event_id": "string (optional)",
+          "ticket_class_ids": "array (optional)",
+          "amount_off": "decimal (optional)",
+          "percent_off": "decimal (optional)",
+          "quantity_available": "integer (optional)",
+          "start_date": "datetime (optional)",
+          "end_date": "datetime (optional)"
         },
-        "description": "Temporarily reserves a venue slot before full confirmation to avoid double bookings."
+        "description": "Creates a discount code applicable to an event or ticket classes with fixed or percentage reduction.",
+        "output": {
+          "discount_id": "string",
+          "status": "created|error"
+        }
       },
-      "VenueCancelAPI": {
+
+      {
+        "APIName": "retrieveDiscount",
         "params": {
-          "url": "https://api.venueops.net/v1/cancel",
-          "apikey": "<YOUR_API_KEY>",
-          "booking_ref": "string",
-          "reason": "string"
+          "url": "https://api.eventbrite.com/v2/discounts/{discount_id}",
+          "apikey": "string",
+          "discount_id": "string",
+          "expand": "array (optional)"
         },
-        "description": "Used to cancel pre-confirmed or held venue bookings."
+        "description": "Fetches discount metadata including type, availability, and associated events or ticket groups.",
+        "output": {
+          "discount_id": "string",
+          "code": "string",
+          "type": "string",
+          "quantity_available": "integer",
+          "quantity_sold": "integer"
+        }
+      },
+
+      {
+        "APIName": "retrieveEventCapacity",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/capacity_tier",
+          "apikey": "string",
+          "event_id": "string"
+        },
+        "description": "Retrieves event capacity tiers including holds and their remaining/total inventory values.",
+        "output": {
+          "event_id": "string",
+          "capacity_total": "integer",
+          "holds": [
+            {
+              "id": "string",
+              "name": "string",
+              "quantity_total": "integer"
+            }
+          ]
+        }
+      },
+
+      {
+        "APIName": "updateEventCapacity",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/capacity_tier/update",
+          "apikey": "string",
+          "event_id": "string",
+          "capacity_total": "integer (optional)",
+          "holds": "array (optional)"
+        },
+        "description": "Updates an event's overall capacity and hold tiers. Supports creation, modification, and deletion of hold tiers with constraints.",
+        "output": {
+          "event_id": "string",
+          "status": "updated|error"
+        }
+      },
+
+      {
+        "APIName": "fetchEventSchedule",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{series_parent_event_id}/schedules",
+          "apikey": "string",
+          "series_parent_event_id": "string"
+        },
+        "description": "Fetches the recurrence schedules for a parent series event, including rules that generate event occurrences.",
+        "output": {
+          "series_parent_event_id": "string",
+          "schedules": [
+            {
+              "schedule_id": "string",
+              "frequency": "string",
+              "start_time": "string (ISO8601)"
+            }
+          ]
+        }
       }
-    }
+    ]
   },
 
-  "CateringManager": {
-    "description": "Coordinates catering vendors, menu designs, pricing negotiations, and dietary validations across multiple partners.",
-    "expert_prompt": "You are the Catering Manager Agent. You are responsible for ensuring food, beverages, and dietary arrangements are compliant with event needs. Always compare vendors and validate menus before confirming.",
-    "apis": {
-      "MenuCraftAPI": {
+  "Venue and Accommodation Management": {
+    "description": "APIs for discovering, booking, and managing venues and nearby hotels. Simplified to focus on key planning tasks.",
+    "expert_prompt": "You are the Venue & Accommodation Management Expert. \nYou help users discover, evaluate, and secure venues and accommodations suitable for their events. \nYou provide guidance on selecting appropriate locations, assessing availability, comparing options, and ensuring booking alignment with event needs.  \n You ask for any missing details and deliver clear, actionable recommendations or structured outputs.",
+    "apis": [
+      {
+        "APIName": "searchVenues",
         "params": {
-          "url": "https://api.menucraft.co/v1/menus",
-          "apikey": "<YOUR_API_KEY>",
-          "guest_count": "int",
-          "dietary_tags": "list[str]",
-          "budget_per_person": "float"
-        },
-        "description": "Returns available menu packages and cost breakdowns per guest."
-      },
-      "FoodEdge": {
-        "params": {
-          "url": "https://partner.foodedge.io/api/v2/vendors",
-          "key": "<ACCESS_KEY>",
+          "url": "https://api.googleplaces.com/v2/venues/search",
+          "apikey": "string (Google Places key)",
           "city": "string",
-          "service_type": "string (buffet|plated|cocktail)"
+          "capacity_min": "int (optional)",
+          "capacity_max": "int (optional)",
+          "occasion_type": "string (optional, e.g., wedding, concert, conference)"
         },
-        "description": "Lists available catering vendors filtered by city and service style."
+        "description": "Searches for suitable venues in a city based on capacity or event type.",
+        "output": {
+          "venues": [
+            {
+              "venue_id": "string",
+              "name": "string",
+              "address": "string",
+              "rating": "float",
+              "capacity": "int"
+            }
+          ]
+        }
       },
-      "PlatefulAPI": {
+      {
+        "APIName": "fetchVenueDetails",
         "params": {
-          "url": "https://api.plateful.app/v1/orders/quote",
-          "apikey": "<YOUR_API_KEY>",
-          "vendor_id": "string",
-          "menu_id": "string",
-          "guests": "int",
-          "delivery_slot": "string (HH:MM-HH:MM)"
+          "url": "https://api.venuefinder.com/v2/venue/{venue_id}",
+          "apikey": "string (VenueFinder API key)",
+          "venue_id": "string"
         },
-        "description": "Generates dynamic pricing and order quotes for a vendor-menu pair."
+        "description": "Fetches detailed venue information including amenities, location, and availability.",
+        "output": {
+          "venue_id": "string",
+          "name": "string",
+          "address": "string",
+          "capacity": "int",
+          "amenities": "list[string]",
+          "availability": "string (available|booked|maintenance)"
+        }
       },
-      "DietScanAPI": {
+      {
+        "APIName": "bookVenue",
         "params": {
-          "url": "https://api.dietscan.health/v1/check",
-          "apikey": "<YOUR_API_KEY>",
-          "menu_id": "string",
-          "restrictions": "list[str]"
+          "url": "https://api.venuefinder.com/v2/venues/{venue_id}/book",
+          "apikey": "string (VenueFinder API key)",
+          "venue_id": "string",
+          "event_id": "string",
+          "start_datetime": "string (ISO8601)",
+          "end_datetime": "string (ISO8601)",
+          "payment_token": "string"
         },
-        "description": "Analyzes a menu against allergy and dietary restriction lists."
+        "description": "Books a venue for a specific event and date range.",
+        "output": {
+          "booking_id": "string",
+          "status": "string (confirmed|pending|failed)",
+          "confirmation_url": "string"
+        }
       },
-      "ChefConnect": {
+      {
+        "APIName": "fetchHotels",
         "params": {
-          "url": "https://chefconnect.io/v1/availability",
-          "apikey": "<YOUR_API_KEY>",
-          "vendor_name": "string",
-          "event_date": "YYYY-MM-DD"
+          "url": "https://api.booking.com/v2/hotels/search",
+          "apikey": "string (Booking.com API key)",
+          "city": "string",
+          "occasion_type": "string (optional)",
+          "min_reviews": "float (optional)",
+          "capacity": "int (optional)"
         },
-        "description": "Checks chef or vendor staff availability on a given date."
+        "description": "Fetches hotels based on city, occasion type, and rating filters for guest accommodation planning.",
+        "output": {
+          "hotels": [
+            {
+              "hotel_id": "string",
+              "name": "string",
+              "address": "string",
+              "rating": "float",
+              "price_per_night": "float"
+            }
+          ]
+        }
       },
-      "TasteLink": {
+
+      {
+        "APIName": "getVenueReports",
         "params": {
-          "url": "https://api.tastelink.net/v2/samples",
-          "apikey": "<YOUR_API_KEY>",
-          "menu_id": "string",
-          "preferred_delivery_date": "YYYY-MM-DD"
+          "url": "https://api.eventsystem.com/v1/venues/reports",
+          "apikey": "string",
+          "venue_id": "integer",
+          "start_date": "string (optional)",
+          "end_date": "string (optional)"
         },
-        "description": "Used to request sample tasting deliveries before finalizing menu selection."
+        "description": "Returns venue performance metrics such as total bookings, revenue, occupancy rate, and utilization.",
+        "output": {
+          "venue_id": "integer",
+          "total_bookings": "integer",
+          "total_revenue": "decimal",
+          "occupancy_rate": "float",
+          "report_range": "string"
+        }
+      },
+      {
+        "APIName": "getVenueAvailabilityCalendar",
+        "params": {
+          "url": "https://api.venuehub.com/v1/venue/{venue_id}/availability-calendar",
+          "apikey": "string (VenueHub API key)",
+          "venue_id": "string",
+          "month": "string (YYYY-MM)"
+        },
+        "description": "Returns a calendar view of a venue’s booked, available, and blocked dates for a specific month.",
+        "output": {
+          "venue_id": "string",
+          "month": "string",
+          "dates": [
+            {
+              "date": "string (YYYY-MM-DD)",
+              "status": "string (available|booked|blocked)"
+            }
+          ]
+        }
       }
-    }
+    ]
   },
-  "LogisticsManager": {
-    "description": "Handles end-to-end event logistics: routing, fleet coordination, staff scheduling, delivery tracking, inventory allocation, vendor management, and compliance.",
-    "expert_prompt": "You are the Logistics Manager Agent. You coordinate transport, staff, inventory, and partner operations. Use the relevant APIs to plan, monitor, and resolve issues dynamically.",
-    "apis": {
-      "MoveSync": {
+
+  "Communication and Notifications": {
+    "description": "Simplified APIs for communicating with event attendees, sending reminders, or broadcasting messages via SMS or email.",
+    "expert_prompt": "You are the Communication & Notifications Expert. \n You assist users in crafting and sending messages, reminders, updates, and announcements related to their events. \n You help maintain clear, effective communication with attendees and stakeholders, ensuring accurate, timely, and well-structured messaging. You request any required information and produce concise, well-formatted outputs.",
+    "apis": [
+      {
+        "APIName": "broadcastMessageToAttendees",
         "params": {
-          "url": "https://api.movesync.io/v1/routes",
-          "apikey": "<YOUR_API_KEY>",
-          "origin": "string",
-          "destination": "string",
-          "departure_time": "HH:MM"
+          "url": "https://api.twilio.com/v2/events/{event_id}/broadcast",
+          "apikey": "string (Twilio API key)",
+          "event_id": "string",
+          "channel": "string (sms|email)",
+          "message": "string",
+          "ticket_type_filter": "string (optional)"
         },
-        "description": "Fetches optimized routes with live traffic and toll cost data."
+        "description": "Sends a broadcast message to all attendees of a given event, with an optional filter on ticket type (e.g., VIP only).",
+        "output": {
+          "event_id": "string",
+          "recipients_count": "int",
+          "status": "string (queued|sent|failed)"
+        }
       },
-      "TransitIQ": {
+      {
+        "APIName": "sendEventReminder",
         "params": {
-          "url": "https://transitiq.net/api/v1/eta",
-          "auth_token": "<AUTH_TOKEN>",
-          "vehicle_id": "string",
-          "current_lat": "float",
-          "current_lng": "float",
-          "destination_lat": "float",
-          "destination_lng": "float"
+          "url": "https://api.twilio.com/v2/messages/send",
+          "apikey": "string (Twilio API key)",
+          "event_id": "string",
+          "recipient": "string (email or phone)",
+          "message_template_id": "string",
+          "send_time": "string (ISO8601, optional)"
         },
-        "description": "Estimates delivery or transport arrival times using live GPS telemetry."
+        "description": "Sends an automated reminder message (email or SMS) to a specific attendee about their upcoming event.",
+        "output": {
+          "message_id": "string",
+          "status": "string (sent|failed)",
+          "sent_at": "string (ISO8601)"
+        }
       },
-      "FleetDeskAPI": {
+      {
+        "APIName": "updateEvent",
         "params": {
-          "url": "https://fleetdesk.app/api/v2/vehicles",
-          "apikey": "<YOUR_API_KEY>",
-          "type": "string (van|truck|bus)",
-          "available_on": "YYYY-MM-DD"
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/update",
+          "apikey": "string",
+          "event_id": "string",
+          "name": "string (optional)",
+          "summary": "string (optional)",
+          "description_html": "string (optional)",
+          "currency": "string (optional)",
+          "online_event": "boolean (optional)",
+          "hide_start_date": "boolean (optional)",
+          "hide_end_date": "boolean (optional)",
+          "capacity": "integer (optional)",
+          "capacity_is_custom": "boolean (optional)"
         },
-        "description": "Checks vehicle availability and maintenance status by type and date."
+        "description": "Updates an event's metadata including name, summary, description, visibility settings, and capacity. If the event is a series parent, some updates cascade to all occurrences.",
+        "output": {
+          "event_id": "string",
+          "status": "updated|error",
+          "changed": "string (ISO8601)"
+        }
       },
-      "TrackFleet": {
+
+      {
+        "APIName": "publishEvent",
         "params": {
-          "url": "https://trackfleet.io/api/v1/health",
-          "apikey": "<YOUR_API_KEY>",
-          "vehicle_id": "string"
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/publish",
+          "apikey": "string",
+          "event_id": "string",
+          "validate_only": "boolean (optional)"
         },
-        "description": "Monitors fuel level, mileage, and maintenance alerts for a specific vehicle."
+        "description": "Publishes an event, making it visible and bookable. Validates that required fields (name, organizer, at least one ticket, description, payment settings) are properly set. Can optionally run in validation-only mode.",
+        "output": {
+          "event_id": "string",
+          "published": "boolean",
+          "published_at": "string (ISO8601, optional)",
+          "errors": "array (optional)"
+        }
       },
-      "OpsSync": {
+
+      {
+        "APIName": "unpublishEvent",
         "params": {
-          "url": "https://opsync.co/v1/staff/schedule",
-          "apikey": "<YOUR_API_KEY>",
-          "date": "YYYY-MM-DD"
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/unpublish",
+          "apikey": "string",
+          "event_id": "string"
         },
-        "description": "Retrieves event-day staff rosters and assigned shift windows."
+        "description": "Unpublishes an event, making it no longer available to attendees. Has specific constraints depending on whether the event is free, paid, or part of a series.",
+        "output": {
+          "event_id": "string",
+          "unpublished": "boolean",
+          "errors": "array (optional)"
+        }
       },
-      "ShiftIQ": {
+
+      {
+        "APIName": "listEventsByOrganization",
         "params": {
-          "url": "https://shiftiq.io/api/v1/attendance",
-          "apikey": "<YOUR_API_KEY>",
-          "staff_id": "string",
-          "timestamp": "ISO-8601"
+          "url": "https://api.eventbrite.com/v2/organizations/{organization_id}/events",
+          "apikey": "string",
+          "organization_id": "string",
+          "status": "string (optional: draft|live|completed|canceled)",
+          "page": "integer (optional)"
         },
-        "description": "Tracks staff check-ins and absences in real time."
+        "description": "Returns a paginated list of all events owned by a given organization, optionally filtered by the event status.",
+        "output": {
+          "organization_id": "string",
+          "page": "integer",
+          "events": [
+            {
+              "event_id": "string",
+              "name": "string",
+              "status": "string",
+              "start_datetime": "string",
+              "end_datetime": "string"
+            }
+          ]
+        }
       },
-      "LoadIQ": {
+
+      {
+        "APIName": "copyEvent",
         "params": {
-          "url": "https://api.loadiq.io/v1/deliveries",
-          "apikey": "<YOUR_API_KEY>",
-          "shipment_id": "string",
-          "priority": "string (normal|urgent)"
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/copy",
+          "apikey": "string",
+          "event_id": "string",
+          "copy_name": "boolean (optional)",
+          "copy_description": "boolean (optional)",
+          "copy_tickets": "boolean (optional)",
+          "copy_settings": "boolean (optional)"
         },
-        "description": "Fetches delivery tracking details and fulfillment status."
-      },
-      "DropTrack": {
-        "params": {
-          "url": "https://droptrack.app/api/v2/pickups",
-          "apikey": "<YOUR_API_KEY>",
-          "order_id": "string"
-        },
-        "description": "Confirms pickup or drop completion for deliveries with digital proof."
-      },
-      "StockPort": {
-        "params": {
-          "url": "https://stockport.io/api/v1/inventory",
-          "apikey": "<YOUR_API_KEY>",
-          "warehouse_id": "string",
-          "item_sku": "string"
-        },
-        "description": "Retrieves live stock availability of event supplies and equipment."
-      },
-      "Storewise": {
-        "params": {
-          "url": "https://storewise.net/api/v1/movements",
-          "apikey": "<YOUR_API_KEY>",
-          "item_id": "string",
-          "direction": "string (in|out)"
-        },
-        "description": "Tracks inbound/outbound movements for consumables or gear."
-      },
-      "PartnerBridge": {
-        "params": {
-          "url": "https://partnerbridge.io/api/v1/vendors",
-          "apikey": "<YOUR_API_KEY>",
-          "service_type": "string (lighting|sound|transport)",
-          "location": "string"
-        },
-        "description": "Lists approved logistics or technical vendors available for collaboration."
-      },
-      "LogiHub": {
-        "params": {
-          "url": "https://logihub.app/api/v2/contracts",
-          "apikey": "<YOUR_API_KEY>",
-          "vendor_id": "string",
-          "contract_status": "string (active|expired)"
-        },
-        "description": "Fetches existing vendor contract data and expiry details."
-      },
-      "CityFlow": {
-        "params": {
-          "url": "https://data.cityflow.io/v3/traffic",
-          "apikey": "<YOUR_API_KEY>",
-          "area_code": "string",
-          "timestamp": "ISO-8601"
-        },
-        "description": "Provides congestion levels and delay estimates by area code."
-      },
-      "SenseFleet": {
-        "params": {
-          "url": "https://sensefleet.ai/api/v1/anomalies",
-          "apikey": "<YOUR_API_KEY>",
-          "vehicle_id": "string"
-        },
-        "description": "Detects route deviations or idle-time anomalies from live vehicle data."
-      },
-      "DocFlow": {
-        "params": {
-          "url": "https://docflow.net/api/v1/permits",
-          "apikey": "<YOUR_API_KEY>",
-          "route_id": "string",
-          "region": "string"
-        },
-        "description": "Validates required transport permits or event logistics paperwork."
-      },
-      "PermitCheck": {
-        "params": {
-          "url": "https://permitcheck.io/api/v2/insurance",
-          "apikey": "<YOUR_API_KEY>",
-          "vehicle_id": "string"
-        },
-        "description": "Verifies transport insurance coverage and policy validity."
+        "description": "Creates a duplicate of an existing event, copying payment settings, refund policy, tax settings, and optional metadata like name, description, and tickets.",
+        "output": {
+          "new_event_id": "string",
+          "status": "copied|error"
+        }
       }
-    }
+    ]
+  },
+
+  "Analytics and Insights": {
+    "description": "Provides simple, actionable insights on event performance, attendee demographics, and feedback summaries for post-event analysis.",
+    "expert_prompt": "You are the Analytics & Insights Expert. \n You help users understand their event performance by summarizing key outcomes, interpreting attendee feedback, and highlighting meaningful trends.  \n You provide clear, data-driven insights that support decision-making and post-event evaluation. \n When needed, you ask for additional context and present insights in a structured, easy-to-digest format.",
+    "apis": [
+      {
+        "APIName": "fetchEventSummary",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/events/{event_id}/summary",
+          "apikey": "string (Eventbrite API key)",
+          "event_id": "string"
+        },
+        "description": "Summarizes key event metrics including attendance, revenue, and satisfaction ratings.",
+        "output": {
+          "event_id": "string",
+          "attendees_count": "int",
+          "tickets_sold": "int",
+          "total_revenue": "float",
+          "avg_feedback_score": "float"
+        }
+      },
+      {
+        "APIName": "fetchEventFeedback",
+        "params": {
+          "url": "https://api.surveymonkey.com/v2/feedback",
+          "apikey": "string (SurveyMonkey API key)",
+          "event_id": "string"
+        },
+        "description": "Fetches attendee feedback and survey results for a specific event.",
+        "output": {
+          "event_id": "string",
+          "responses_count": "int",
+          "average_rating": "float",
+          "common_themes": "list[string]"
+        }
+      }
+    ]
   }
 }
