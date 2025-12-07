@@ -46,7 +46,7 @@ class APIPipeline:
     # -------------------------------
     # 1. Clarification Node
     # -------------------------------
-    def clarification_node(self, state:EventState)-> EventState:
+    def clarification_node(self, state: EventState)-> EventState:
         task = state.api_task
         caller = state.caller
 
@@ -73,6 +73,8 @@ class APIPipeline:
              "response": "Describe what’s wrong and why it cannot be fixed automatically. If clarification is needed, explain which parameter is missing."
            }}
            DONOT EXECUTE TOOL.
+        2. If ANY param is a placeholder (YOUR_API_KEY, YYYY-MM-DD, <value>, etc.) → status="fail".
+        3. ONLY JSON and no other text.
         """
 
         conversation_text = "\n".join([
@@ -90,6 +92,9 @@ class APIPipeline:
 
         try:
             match = re.search(r'{.*?}', msg.content, re.DOTALL)
+            if not match:
+                result = {"status": "fail", "issue": "No JSON object found in clarifier response." + str(msg.content)}
+                # raise ValueError("No JSON object found.")
             if match:
                 clarification = match.group(0)
             else:
@@ -99,16 +104,16 @@ class APIPipeline:
             print(f"[ClarificationNode] JSON Parse Error: {e}")
             result = {"status": "fail", "issue": "Non-JSON response from clarifier."}
 
-        if result["status"] == "ok":
+        if result.get("status") == "ok":
             print("[ClarificationNode] ✅ Parameters validated")
             state.next = "api_execution"
         else:
-            issue = result.get("response", "Unknown validation issue.")
+            issue = result.get("response", "Could not extract JSON string from msg content: ."+ msg.content)
             print("[ClarificationNode] ❌ Irrecoverable issue:", issue)
             feedback = f"Cannot execute {task.get('name', 'unknown')}: {issue}"
             updated_history = state.chat_history + [AIMessage(content=feedback, response_metadata={"type": "expert", "name": "api_clarification"})]
             state.chat_history = updated_history
-            state.next = caller
+            state.next = "orchestrator"
             state.caller = "api_execution"
 
         return state
@@ -125,7 +130,6 @@ class APIPipeline:
         Your job is to receive a JSON API call request and return a mock JSON response.
         Rules:
         - Always output VALID JSON only (no explanations, no natural language, no Markdown).
-        - The top-level response must directly represent the result of the API call.
         - If parameters are missing, infer or provide sensible defaults.
         - Use realistic placeholder values depending on the API type.
         - Never invent extra keys outside what would logically exist.
@@ -154,10 +158,7 @@ class APIPipeline:
         state.caller = "api_execution"
 
         return state
-
-    # -------------------------------
-    # 3. Router Node
-    # -------------------------------
+    
     def route(self, state):
         """Pass-through router based on current state.next."""
         return state.next
