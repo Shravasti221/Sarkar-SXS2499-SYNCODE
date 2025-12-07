@@ -212,8 +212,8 @@ def scene_generator(state: State, model_name: str) -> State:
     )
 
     sys_prompt, user_prompt = stage1_prompt(state['scenarios'][0])
-    print("SYS PROMPT: ", sys_prompt)
-    print("USER_PROMPT: ", user_prompt)
+    # print("SYS PROMPT: ", sys_prompt)
+    # print("USER_PROMPT: ", user_prompt)
     messages = [
         SystemMessage(content=sys_prompt),
         HumanMessage(content=user_prompt)
