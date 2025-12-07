@@ -49,6 +49,16 @@ Output format:
 def user_llm(state: EventState):
     """User simulates actions based on problem + chat history"""
     problem = state.problem_created
+    history_text = "Last 3 messages in conversation: \n"
+    latest_message = ""
+    if len(state.chat_history) > 0:
+        pick_messages = min(3, len(state.chat_history))
+        history_text = "\n".join([
+            f"{m.response_metadata['type'].upper()}: {m.content}" for m in state.chat_history[-pick_messages:]
+        ])
+        latest_message = f"The latest message to be responded to is:\n{state.chat_history[-1].content}"
+    else:
+        history_text = "Explain the problem in first person to the AI experts."
     system_prompt = f"""
 You are the USER in a simulated conversation with AI experts.
 
@@ -65,15 +75,19 @@ Your behavior rules:
    - If you have been asked for clarification or more info, provide it based on the context.
 4. Always speak in the first person (e.g., “I’m trying to…”).
 5. Keep the tone realistic and concise — like an actual user chatting, not an AI.
-6. Generate one line at a time to simulate the user’s message
-7. Donot repeat the exact intent in the conversation. Instead, use your own words to convey the same information. 
-8. Donot repeated use the exact same phrases in the conversation. Instead, use synonyms or rephrase your sentences or ask something different but relevant.
-9. DO NOT offer solutions.
+6. Donot repeat the exact intent in the conversation. Instead, use your own words to convey the same information. 
+7. DO NOT offer solutions
 
+{history_text}
+
+{latest_message}
 Output: a single user message in plain English.
     """
     msgs = [SystemMessage(content = system_prompt)] + state.chat_history
     msg = llm.invoke(msgs)
+    
+    print("SYSTEM PROMPT FOR USER LLM:\n", system_prompt)
+    print("_______________________________________________________________")
     print_message(state, "User", msg.content)
     
     if "end of conversation" in msg.content.lower():
