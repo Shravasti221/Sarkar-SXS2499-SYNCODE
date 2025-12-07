@@ -28,7 +28,7 @@ Your task is to generate exactly **one realistic and manageable problem scenario
 Constraints:
 1. Avoid catastrophic problems (e.g., full venue destruction, speaker cancellations affecting the whole event, massive technical failures). Focus on **common, everyday hiccups**.
 2. Keep the problem description **concise (under 300 words)**.
-3. Include **enough context** (event type, size, all required api parameter values and time) so assistants and tools can reason about a solution.
+3. Include **enough context** (event type, size, etc) so assistants and tools can reason about a solution.
 4. Give **exactly one problem scenario**.
 
 Output format:
@@ -76,7 +76,7 @@ Your behavior rules:
 5. Keep the tone realistic and concise — like an actual user chatting, not an AI.
 6. Donot repeat the exact intent in the conversation. Instead, use your own words to convey the same information. 
 7. DO NOT offer solutions
-8. Generate relevant answers for the clarifications. FOr example if api key is asked, generate a relevant api key based on context. Similarly if relevant date, location, etc are requested for clarification, provide the same after looking at the `Context`.
+8. Generate relevant answers for the clarifications. FOr example if api key is asked, generate a completely random API key or pick one from the problem statement. Similarly if relevant date, location, etc are requested for clarification, provide the same after looking at the `Context`.
 
 {history_text}
 
