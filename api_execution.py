@@ -21,6 +21,11 @@ class APIPipeline:
             raise FileNotFoundError(f"API spec file not found: {path}")
         with open(path, "r") as f:
             data = json.load(f)
+        for k, v in data.items():
+            all_apis = {}
+            for api in v["apis"]:
+                all_apis[api["APIName"]] = api
+            data[k]["apis"] = all_apis
 
         api_map = {}
         for agent_name, agent_data in data.items():
