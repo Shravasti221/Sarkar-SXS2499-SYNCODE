@@ -1,7 +1,6 @@
 import os
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
-
 from utils.helpers import print_message
 from utils.pydantic_objects import EventState, write_pydantic_object
 # -----------------------------
@@ -24,7 +23,7 @@ def problem_creator_llm(state: EventState):
     system_prompt = ("""
 You are the Problem Creator for an Event Management Assistant.  
 Your task is to generate exactly **one realistic and manageable problem scenario** based on the below trajectory.  """ 
-    + state.problem_created + """"
+    + state.problem_created["problem_statement"][0] + """"
 
 Constraints:
 1. Avoid catastrophic problems (e.g., full venue destruction, speaker cancellations affecting the whole event, massive technical failures). Focus on **common, everyday hiccups**.
@@ -35,10 +34,10 @@ Constraints:
 Output format:
 - Plain text **problem description only**.
 """)
-    msgs = [SystemMessage(content = system_prompt)]+state.chat_history
+    msgs = [SystemMessage(content = system_prompt)]+ state.chat_history
     # print(chat_history_to_string(msgs))
     msg = llm.invoke(msgs)
-    state.problem_created = msg.content
+    state.problem_created = msg.content + "\n" + "\n".join([hint[2][0] + ": " + hint[2][1]  for hint in state.problem_created["hints"]])
     print_message(state, "ProblemCreatorLLM", msg.content)
     return state
 
