@@ -67,10 +67,28 @@ def create_timestamped_file(content: str = "") -> str:
 
 def write_pydantic_object(obj: BaseModel, filepath: str):
     """Save a Pydantic model instance to a JSON file."""
+
+    def convert_tuple_keys(data):
+        if isinstance(data, dict):
+            new_dict = {}
+            for k, v in data.items():
+                if isinstance(k, tuple):
+                    k = "__TUPLE__" + json.dumps(k)  # or just str(k)
+                new_dict[k] = convert_tuple_keys(v)
+            return new_dict
+        elif isinstance(data, list):
+            return [convert_tuple_keys(x) for x in data]
+        else:
+            return data
+
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"{filepath} does not exist")
+    
+    safe_dump = convert_tuple_keys(obj.model_dump())
+
     with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(obj.model_dump(), f, indent=4)
+        json.dump(safe_dump, f, indent=4)
+
 
 def load_pydantic_object(model_class, filepath: str):
     """Load a Pydantic model instance from a JSON file."""
