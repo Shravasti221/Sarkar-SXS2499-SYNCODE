@@ -92,7 +92,8 @@ Defined in `helpers.py`:
 ```python
 class EventState(TypedDict):
     user_request: str
-    problem_created: str
+    problem_created: Dict
+    problem_statement: str
     chat_history: List[Dict[str, str]]
     api_task: Optional[ApiCall]
     api_result: Dict

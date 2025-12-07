@@ -19,7 +19,7 @@ def problem_creator_llm(state: EventState):
     # Reads the message in state.problem_created (and chat history if any) and generates a problem scenario
     # Updates the generated problem to state.problem_created
     
-    print("\n[ProblemCreatorLLM] Generating problem scenario... :", state.problem_created)
+    print("\n[ProblemCreatorLLM] Generating problem scenario... :", state.problem_created["problem_statement"][0])
     system_prompt = ("""
 You are the Problem Creator for an Event Management Assistant.  
 Your task is to generate exactly **one realistic and manageable problem scenario** based on the below trajectory.  """ 
@@ -37,7 +37,7 @@ Output format:
     msgs = [SystemMessage(content = system_prompt)]+ state.chat_history
     # print(chat_history_to_string(msgs))
     msg = llm.invoke(msgs)
-    state.problem_created = msg.content + "\n" + "\n".join([hint[2][0] + ": " + hint[2][1]  for hint in state.problem_created["hints"]])
+    state.problem_statement = msg.content + "\n" + "\n".join([hint[2][0] + ": " + hint[2][1]  for hint in state.problem_created["hints"]])
     print_message(state, "ProblemCreatorLLM", msg.content)
     return state
 
@@ -47,7 +47,7 @@ Output format:
 # -----------------------------
 def user_llm(state: EventState):
     """User simulates actions based on problem + chat history"""
-    problem = state.problem_created
+    problem = state.problem_statement
     history_text = "Last 3 messages in conversation: \n"
     latest_message = ""
     if len(state.chat_history) > 0:
