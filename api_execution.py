@@ -157,8 +157,7 @@ class APIPipeline:
         )
 
         state.chat_history.append(tool_msg)
-        state.api_task = None
-        state.task = msg.content
+        state.api_task = msg.content
         state.next = caller
         state.caller = "api_execution"
 
