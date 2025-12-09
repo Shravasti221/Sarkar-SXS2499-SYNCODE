@@ -154,6 +154,7 @@ class APIPipeline:
             content=msg.content,
             tool_call_id=task.get("name", "unknown_api") + str(uuid.uuid4()),
             additional_kwargs={"toolname": task.get("name", "unknown_api")},
+            tool_name=task.get("name", "unknown_api"),
             response_metadata={"type": "tool", "name": task.get("name", "unknown_api")}
         )
 
