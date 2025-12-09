@@ -157,12 +157,17 @@ class APIPipeline:
         )
 
         state.chat_history.append(tool_msg)
-        state.api_task = msg.content
+        try:
+            parsed_api_response = json.loads(msg.content)
+        except json.JSONDecodeError:
+            parsed_api_response = {"error": "Mock API returned invalid JSON format", "raw": msg.content}
+
+        state.api_task = parsed_api_response
         state.next = caller
         state.caller = "api_execution"
 
         return state
-    
+
     def route(self, state):
         """Pass-through router based on current state.next."""
         return state.next
