@@ -55,8 +55,9 @@ class APIPipeline:
         task = state.api_task
         caller = state.caller
 
-        print(f"\n[ClarificationNode] Incoming task from: {caller}")
-        print(f"[ClarificationNode] Raw task:\n{json.dumps(task, indent=2)}")
+        # print(f"\n[ClarificationNode] Incoming task from: {caller}")
+        # print(f"[ClarificationNode] Raw task:\n{json.dumps(task, indent=2)}")
+        print(f"[ClarificationNode] From: {caller}:{task}")
 
         system_prompt = f"""
         You are a strict API Parameter Validator & Clarifier.

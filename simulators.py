@@ -88,7 +88,7 @@ Output: a single user message in plain English.
     
     # print("SYSTEM PROMPT FOR USER LLM:\n", system_prompt)
     # print("_______________________________________________________________")
-    # print_message(state, "User", msg.content)
+    print_message(state, "user", msg.content)
     
     if "end of conversation" in msg.content.lower():
         state.next= "END"
