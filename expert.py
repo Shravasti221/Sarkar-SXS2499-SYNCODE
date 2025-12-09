@@ -157,5 +157,5 @@ class Expert:
     def route(self, state: EventState):
         """Decide whether to go to API or back to orchestrator"""
         write_pydantic_object(state, state.ts)
-        print("________________________________________________________________________________________________________")
+        # print("________________________________________________________________________________________________________")
         return state.next

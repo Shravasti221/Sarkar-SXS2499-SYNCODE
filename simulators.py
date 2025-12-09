@@ -86,9 +86,9 @@ Output: a single user message in plain English.
     msgs = [SystemMessage(content = system_prompt)] + state.chat_history
     msg = llm.invoke(msgs)
     
-    print("SYSTEM PROMPT FOR USER LLM:\n", system_prompt)
-    print("_______________________________________________________________")
-    print_message(state, "User", msg.content)
+    # print("SYSTEM PROMPT FOR USER LLM:\n", system_prompt)
+    # print("_______________________________________________________________")
+    # print_message(state, "User", msg.content)
     
     if "end of conversation" in msg.content.lower():
         state.next= "END"
