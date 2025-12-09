@@ -174,8 +174,6 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
     def node_fn(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Update state with LLM output (always return dict)."""
         sys_prompt = self.build_orchestrator_prompt(state)
-        # print("\n========== ORCHESTRATOR DEBUG ==========")
-        # print("Prompt to LLM:\n", prompt[:800], "...\n")
         print("[Orchestrator IP] Chat history length:", len(state.chat_history))
         
         msg = safe_invoke_llm(llm,[SystemMessage(content =  sys_prompt)] + state.chat_history)
