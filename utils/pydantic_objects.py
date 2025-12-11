@@ -58,8 +58,8 @@ class EventState(BaseModel):
 
 def create_timestamped_file(content: str = "") -> str:
     """Write content to a timestamped file in 'conversations/' folder."""
-    os.makedirs("conversations", exist_ok=True)  # ensure directory exists
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # safe format
+    os.makedirs("conversations", exist_ok=True) 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filepath = os.path.join("conversations", f"{timestamp}.json")
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
@@ -73,7 +73,7 @@ def write_pydantic_object(obj: BaseModel, filepath: str):
             new_dict = {}
             for k, v in data.items():
                 if isinstance(k, tuple):
-                    k = "__TUPLE__" + json.dumps(k)  # or just str(k)
+                    k = "__TUPLE__" + json.dumps(k)
                 new_dict[k] = convert_tuple_keys(v)
             return new_dict
         elif isinstance(data, list):

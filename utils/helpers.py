@@ -3,9 +3,6 @@ import re
 import uuid
 from typing import List
 from utils.pydantic_objects import EventState
-# -----------------------------
-# Helper function for logging
-# -----------------------------
 def print_message(state: EventState, role: str, content: str):
     line = f"[{role}] {content}"
     print(line)
@@ -28,13 +25,11 @@ def chat_history_to_string(chat_history: List[BaseMessage]) -> str:
         else:
             role = msg.__class__.__name__.replace("Message", "").upper()
 
-        # Add expertise for AI messages
         if isinstance(msg, AIMessage):
             expertise = msg.additional_kwargs.get("expertise")
             if expertise:
                 role = f"{role} ({expertise})"
 
-        # Add toolname for Tool messages
         if isinstance(msg, ToolMessage):
             toolname = msg.additional_kwargs.get("toolname")
             if toolname:
@@ -51,19 +46,15 @@ def extract_and_order_steps(problem_data: dict, problem_index: int = 0):
     as tuple pairs (function, uuid). Does NOT inject uuid into text.
     """
 
-    # ---- Extract & clean text ----
     text = problem_data["problem_statement"][problem_index]
     cleaned = re.sub(r"\s+", " ", text)
     sentences = re.split(r'(?<=[.!?])\s+', cleaned)
 
-    # ---- Build list of all API names ----
     api_list = [step_name for step_name, _ in problem_data["steps"]]
     api_list.append("start_dialogue")
 
-    # ---- Assign a stable UUID for each function once ----
     uuid_map = {api: str(uuid.uuid4()) for api in api_list}
 
-    # ---- Map API → sentences ----
     api_to_sentence = {}
     for api in api_list:
         pattern = re.compile(rf"\({api}\)", re.IGNORECASE)
@@ -73,7 +64,6 @@ def extract_and_order_steps(problem_data: dict, problem_index: int = 0):
             if pattern.search(s)
         ]
 
-    # ---- Build unsorted results ----
     results = []
     for key in problem_data["steps_with_hints"]:
         index, prev_api, curr_api = key
@@ -86,7 +76,6 @@ def extract_and_order_steps(problem_data: dict, problem_index: int = 0):
 
         results.append((index, prev_tuple, curr_tuple, hint_sentence))
 
-    # ---- Custom sorting: start_dialogue previous always first ----
     def sort_key(item):
         index, prev_tuple, curr_tuple, _ = item
         prev_api, _ = prev_tuple

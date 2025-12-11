@@ -3,6 +3,7 @@ from expert import Expert
 from langgraph.graph import StateGraph, START, END
 from IPython.display import Image, display
 import json, os
+from pathlib import Path
 from ProblemStatementGeneration.scenario import generate_problem_statement
 from orchestrator import Orchestrator 
 from simulators import problem_creator_llm, user_llm, user_route
@@ -13,7 +14,9 @@ from utils.pydantic_objects import create_timestamped_file
 #-------------------
 # Build Workflow Graph
 # -----------------------------
-experts_json = json.load(open("experts.json")) 
+EXPERTS_JSON_PATH = Path(__file__).parent / "experts.json"
+API_GRAPH_PATH = Path(__file__).parent / "api_graph.csv"
+experts_json = json.load(open(EXPERTS_JSON_PATH)) 
 for k, v in experts_json.items():
   all_apis = {}
   for api in v["apis"]:
@@ -77,7 +80,7 @@ chain = workflow.compile()
 display(Image(chain.get_graph().draw_mermaid_png()))
 
 chat_history = []
-problem_trajectory = generate_problem_statement()
+problem_trajectory = generate_problem_statement(EXPERTS_JSON_PATH, API_GRAPH_PATH)
 # problem_trajectory["hints"] = extract_and_order_steps(problem_trajectory)
 # # state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created=extract_and_order_steps(problem_trajectory, 0))  
 # state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created=problem_trajectory)

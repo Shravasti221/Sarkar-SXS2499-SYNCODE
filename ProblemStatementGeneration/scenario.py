@@ -256,7 +256,7 @@ def scene_generator_3(state: State):
 # API-scenario mapping
 # ------------------------------
 
-def generate_problem_statement(EXPERTS_JSON_PATH="experts", API_GRAPH_PATH="api_graph.csv") -> Scenario:
+def generate_problem_statement(EXPERTS_JSON_PATH="experts.json", API_GRAPH_PATH="api_graph.csv") -> Scenario:
     
     G = build_nx_graph_from_csv(API_GRAPH_PATH)
     trajectories = generate_trajectories_for_sampled_nodes(G, 10, p_stop=0.3, rejection_prob=0.95)

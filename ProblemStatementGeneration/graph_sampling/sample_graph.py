@@ -15,9 +15,7 @@ from graph_sampling.utils import split_at_capitals, find_csv_columns
 from graph_sampling.params import SENTENCE_MODEL, RANDOM_SEED, WEIGHT_DISSIM, WEIGHT_LENGTH, WEIGHT_EXPERT, LOOP_PENALTY_SCALE, MAX_LEN_NORM
 warnings.filterwarnings("ignore")
 
-# ----------------------------
-# 2. Build Graph (string node ids)
-# ----------------------------
+# Build Graph (string node ids)
 def build_graph(api_meta: Dict[str, Dict[str,Any]], weights_csv_path: str) -> Tuple[nx.DiGraph, Dict[str, Dict[str,Any]]]:
     """
     Build directed graph with node ids = api_name (strings).
@@ -30,7 +28,6 @@ def build_graph(api_meta: Dict[str, Dict[str,Any]], weights_csv_path: str) -> Tu
     src_col, dst_col, w_col = find_csv_columns(df)
 
     G = nx.DiGraph()
-    # ensure all APIs present as nodes
     for name, meta in api_meta.items():
         G.add_node(name, meta=meta)
 
@@ -54,9 +51,6 @@ def build_graph(api_meta: Dict[str, Dict[str,Any]], weights_csv_path: str) -> Tu
     print(f"[build_graph] nodes={G.number_of_nodes()}, edges={G.number_of_edges()}, missing_refs={missing_edges}")
     return G, api_meta
 
-# ----------------------------
-# 3. Embeddings (precompute)
-# ----------------------------
 def compute_embeddings_for_meta(api_meta: Dict[str, Dict[str,Any]], model_name: str = SENTENCE_MODEL,
                                 batch_size: int = 64, device: Optional[str] = None) -> Dict[str, np.ndarray]:
     """
@@ -83,9 +77,7 @@ def compute_embeddings_for_meta(api_meta: Dict[str, Dict[str,Any]], model_name: 
         emb_map[n] = v.astype(np.float32)
     return emb_map
 
-# ----------------------------
-# 4. Sampling starting nodes (unique by api_name)
-# ----------------------------
+# Sampling starting nodes (unique by api_name)
 def sample_start_nodes_unique(G: nx.DiGraph, k: int, rng=random) -> List[str]:
     """
     Sample nodes weighted by out-degree. Return up to k UNIQUE node names.
@@ -100,15 +92,11 @@ def sample_start_nodes_unique(G: nx.DiGraph, k: int, rng=random) -> List[str]:
     if weights.sum() == 0:
         weights = np.ones_like(weights)
     probs = weights / weights.sum()
-    # If k >= len(cand_nodes), return all
     k_eff = min(k, len(cand_nodes))
-    # use numpy choice without replacement via permutation
     chosen = list(np.random.choice(cand_nodes, size=k_eff, replace=False, p=probs))
     return chosen
 
-# ----------------------------
-# 5. Trajectory generation (uses string node ids)
-# ----------------------------
+# Trajectory generation (uses string node ids)
 def backward_to_root(G: nx.DiGraph, start: str, rng=random, max_steps: Optional[int]=None) -> List[str]:
     """
     Walk backwards by choosing a random predecessor at each step until node with no predecessors.
@@ -175,19 +163,14 @@ def full_trajectory_from_start(G: nx.DiGraph, start: str, p_stop: float=0.25, ma
     combined = back + fwd
     return combined
 
-# ----------------------------
-# 6. Entropy function (uses precomputed embeddings)
-# ----------------------------
+# Entropy function (uses precomputed embeddings)
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
-    # assume normalized inputs; safe fallback
     da = np.linalg.norm(a)
     db = np.linalg.norm(b)
     if da < 1e-12 or db < 1e-12:
         return 0.0
     return float(np.dot(a, b) / (da * db))
-# -------------------------------------------------
-# 4. Entropy – global inverse centrality, proper penalty
-# -------------------------------------------------
+# Entropy – global inverse centrality, proper penalty
 def _global_inv_centrality(G: nx.DiGraph) -> Dict[str, float]:
     """Pre-compute 1/(out_degree+ε) for every node once."""
     eps = 1e-8
@@ -208,7 +191,6 @@ def entropy_function(
     if len(traj) <= 1:
         return 0.0
     
-    # ---- 1. dissimilarity (centrality weighted) ----
     inv_w = [INV_CENTRALITY.get(n, 0.0) for n in traj]
     total_w = sum(inv_w)
     if total_w == 0:
@@ -231,30 +213,24 @@ def entropy_function(
             pair_count += w
     dissim_score = dissim_sum / (pair_count + 1e-12)
 
-    # ---- 2. length (log-scaled) ----
     length_score = np.log1p(len(traj)) / np.log1p(max_len_norm)
 
-    # ---- 3. loop penalty (fraction of repeats) ----
     repeats = len(traj) - len(set(traj))
     repeat_frac = repeats / len(traj)
     loop_penalty = -loop_penalty_scale * repeat_frac   # ∈ [-1,0]
 
-    # ---- 4. expert diversity (normalised) ----
     experts = {api_meta.get(n, {}).get("expert", "") for n in traj}
     experts.discard("")
     total_experts = len({m["expert"] for m in api_meta.values() if m.get("expert")})
     expert_norm = len(experts) / max(total_experts, 1)
 
-    # ---- composite (all terms 0-1 except penalty) ----
     score = (weight_dissim * dissim_score +
              weight_length * length_score +
              weight_expert * expert_norm)
     score += loop_penalty
     return float(score)
 
-# ----------------------------
-# 7. Aggregate: sample starts, create multiple tra j per start, compute scores
-# ----------------------------
+# Aggregate: sample starts, create multiple tra j per start, compute scores
 def generate_and_score(
     G: nx.DiGraph,
     api_meta: Dict[str, Dict[str,Any]],

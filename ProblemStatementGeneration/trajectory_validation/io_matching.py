@@ -13,11 +13,6 @@ TYPE_BONUS = 0.25
 NAME_WEIGHT = 0.6
 MIN_SCORE_THRESHOLD = 0.6  # Only consider pairs with score >= 60%
 
-
-
-# =============================================
-# GREEDY MATCHING (NEW METHOD)
-# =============================================
 def max_bipartite_matching(
     pred_outputs: List[Tuple[str, np.ndarray, str, np.ndarray]],
     succ_inputs: List[Tuple[str, np.ndarray, str, np.ndarray]]
@@ -31,7 +26,6 @@ def max_bipartite_matching(
     if not pred_outputs or not succ_inputs:
         return [], [t[0] for t in succ_inputs]
 
-    # 1. All pairwise scores
     pair_scores = []
     for i, (o_path, o_name_e, o_typ, o_desc_e) in enumerate(pred_outputs):
         for j, (i_path, i_name_e, i_typ, i_desc_e) in enumerate(succ_inputs):
@@ -57,10 +51,9 @@ def max_bipartite_matching(
                     "type_match": type_match
                 })
 
-    # 2. Sort descending
+
     pair_scores.sort(key=lambda x: x["score"], reverse=True)
 
-    # 3. Greedy selection
     visited_out = set()
     visited_in = set()
     matched_pairs = []
@@ -72,7 +65,6 @@ def max_bipartite_matching(
         visited_out.add(rec["pred_idx"])
         visited_in.add(rec["succ_idx"])
 
-    # 4. Unmatched inputs
     user_inputs = [
         succ_inputs[j][0] for j in range(len(succ_inputs))
         if j not in visited_in
@@ -81,16 +73,12 @@ def max_bipartite_matching(
     return matched_pairs, user_inputs
 
 
-# =============================================
-# PAIRWISE VALIDATION
-# =============================================
 def validate_api_pair(
     pred_apis: List[Dict],
     succ_apis: List[Dict],
     embedder: Embedder,
     api_name_map: Dict[str, str]
 ) -> Dict[str, Any]:
-    # Build outputs
     pred_outputs = []
     for api in pred_apis:
         _, outs = api_to_embeddings(api, embedder)
@@ -98,7 +86,6 @@ def validate_api_pair(
         for path, n_emb, typ, d_emb in outs:
             pred_outputs.append((f"{api_name}.{path}", n_emb, typ, d_emb))
 
-    # Build inputs
     succ_inputs = []
     for api in succ_apis:
         ins, _ = api_to_embeddings(api, embedder)
@@ -106,10 +93,8 @@ def validate_api_pair(
         for path, n_emb, typ, d_emb in ins:
             succ_inputs.append((f"{api_name}.{path}", n_emb, typ, d_emb))
 
-    # Greedy matching
     matched_pairs, user_inputs_full = max_bipartite_matching(pred_outputs, succ_inputs)
 
-    # Strip API prefix
     def strip(path: str) -> str:
         return path.split('.', 1)[1] if '.' in path else path
 
@@ -135,9 +120,6 @@ def validate_api_pair(
     }
 
 
-# =============================================
-# TRAJECTORY VALIDATOR
-# =============================================
 def validate_trajectory(
     trajectory: List[Tuple[List[Any], float]],
     all_apis: List[Dict[str, Any]]
@@ -157,7 +139,6 @@ def validate_trajectory(
         print(f"[clean_name] raw: {s} -> cleaned: {cleaned}", flush=True)
         return cleaned
 
-    # instantiate embedder (may raise) — print around it
     try:
         print("[validate_trajectory] Instantiating Embedder...", flush=True)
         embedder = Embedder()
@@ -172,7 +153,6 @@ def validate_trajectory(
         print("[validate_trajectory] Trajectory has fewer than 2 elements, returning empty results", flush=True)
         return results
 
-    # We'll iterate pairs (i, i+1)
     total_pairs = len(trajectory) - 1
     print(f"[validate_trajectory] Validating {total_pairs} trajectory pairs", flush=True)
 
@@ -186,13 +166,11 @@ def validate_trajectory(
             print(f"[loop] predecessor raw group (index {i}): {pred_group} (score={pred_score})", flush=True)
             print(f"[loop] successor raw group (index {i+1}): {succ_group} (score={succ_score})", flush=True)
 
-            # Clean names
             pred_names = [clean_name(n) for n in pred_group]
             succ_names = [clean_name(n) for n in succ_group]
             print(f"[loop] predecessor cleaned names: {pred_names}", flush=True)
             print(f"[loop] successor cleaned names: {succ_names}", flush=True)
 
-            # Lookup APIs
             pred_apis = [api_lookup[n] for n in pred_names if n in api_lookup]
             succ_apis = [api_lookup[n] for n in succ_names if n in api_lookup]
             missing_pred = [n for n in pred_names if n not in api_lookup]
@@ -203,13 +181,11 @@ def validate_trajectory(
 
             if not pred_apis or not succ_apis:
                 print("[loop] One of pred_apis or succ_apis is empty — preparing empty-match result", flush=True)
-                # Show succ_apis params for debugging (may be empty)
                 try:
                     succ_params = []
                     for api in succ_apis:
                         p = api.get("params", {})
                         print(f"[loop] succ api '{api.get('name')}' params (raw): {p}", flush=True)
-                        # If params is dict, list out items to make clear what's inside
                         if isinstance(p, dict):
                             print(f"[loop] succ api '{api.get('name')}' params keys: {list(p.keys())}", flush=True)
                         succ_params.extend(p if isinstance(p, list) else list(p))
@@ -233,10 +209,8 @@ def validate_trajectory(
             except Exception as e:
                 print("[loop] ERROR in validate_api_pair:", e, flush=True)
                 traceback.print_exc()
-                # attach debug info and continue
                 result = {"matches": [], "error": str(e)}
 
-            # attach predecessor/successor info to result
             result.update({"predecessor": pred_names, "successor": succ_names})
             print(f"[loop] Final result for pair i={i}: {result}", flush=True)
             results.append(result)
@@ -244,7 +218,6 @@ def validate_trajectory(
         except Exception as e:
             print(f"[loop] Unexpected ERROR processing pair i={i}:", e, flush=True)
             traceback.print_exc()
-            # Optionally append an error result so caller can see which pair failed
             results.append({
                 "predecessor": pred_group if 'pred_group' in locals() else None,
                 "successor": succ_group if 'succ_group' in locals() else None,
