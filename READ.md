@@ -3,24 +3,36 @@
 This repository implements a **dynamic, multi-agent orchestration framework** built on [LangGraph](https://github.com/langchain-ai/langgraph).
 It enables **conversational coordination between multiple expert LLM agents**, a central orchestrator, user simulators, and shared API tools — all working in a cyclic, reasoning-based workflow.
 
----
-# Pending Items:
-Here’s a clean way to structure your **to-do list** for this project. I’ve also added one more logical item based on your workflow gaps:
+## **Dataset Generation Introduction**
 
----
+Based on my review of relevant research papers, I identified a gap in datasets for training multi-agent tool-use systems. To address this, I propose methods for dataset creation, outlined at the end of this document. As a starting point, I decided to develop a simpler proof-of-concept system to validate the approach before scaling to more complex implementations.
 
-### To-Do List
+**System Overview**  
+The system simulates a user, modeled as a junior field assistant, interacting with an orchestrator LLM connected to specialized expert LLMs within an event planning company. These experts include a Logistics Expert, Venue Manager, and Catering Manager, each handling distinct units. To simulate problem creation, a Problem Creator module generates tasks that serve as hints for the user-simulating LLM. 
 
-* [ ] Pass API IDs for all tools so that the **API Execution Node** can corroborate parameters and validate whether clarifications are required.
-* [ ] Ensure **LLMs don’t go in circles** by checking if questions or actions are disjoint from the existing dialogue history.
-* [ ] Implement **loop detection / cycle prevention** in the workflow graph, especially for conditional edges (expert → API → expert → orchestrator).
-* [x] Add **validation for expert JSON responses**, e.g., verify required keys (`route`, `task.name`, `task.params`) and fallback for malformed outputs.
-* [ ] Standardize **API result format** to ensure all agents interpret results consistently.
-* [ ] Add **logging / persistence** of full `EventState` for post-run analysis and debugging.
-* [ ] Implement **step-through mode** for debugging chat flow and agent decisions (pause after each node, print last message).
-* [ ] Consider **rate-limiting or throttling** LLM/API calls to prevent infinite loops or repeated invocations.
-* [ ]  **Error handling for API failures**: Implement retries, fallback responses, or escalation if an API consistently fails.
-* [ ] **Conversation summarization**: Add a mechanism to summarize long chats for easier review or reporting.
+Eg Problem: *A local community fundraiser is scheduled for next Sunday at 7 PM in the town hall, expecting about 120 guests. During the final rehearsal, the volunteer coordinator discovered that the “Garden Cleanup” and “Dinner Prep” breakout rooms were accidentally assigned to the same time slot. This double‑booking will force volunteers into two rooms simultaneously, causing confusion about where to report and potentially delaying the start of the main event. The issue is minor, but it needs quick resolution to keep the schedule on track*. 
+
+The User LLM continuously validates whether the current solution (based on reviewing the entire chat history) sufficiently addresses the task. The user is restricted to asking simple, first-person questions to maintain consistency and simplicity in interactions.
+```
+Problem Injection (Or generation)
+   ↓
+ User ↴
+  └─ Orchestrator LLM
+     ↕── Expert 1: Logistics Expert <--←
+     |    ↳ LLM generates JSON output           ↑              ↑ 
+     |    ↳ Refine Output to parseable JSON     |              |
+     |    ↳ Route Selector                      |              |
+     |        ├── response → [orchestrator]     |              |
+     |        ├── api_execution →--> clarification ->api_execution
+     |                              [arg validator]    [LLM backed Mock Server]
+     ├──→ Expert 2: Venue Manager (similar flow)--→↑
+     ├──→ Expert 3: Catering Manager (similar flow)--→|
+```
+- **Orchestrator LLM**: Acts as the central coordinator, routing user queries to the appropriate expert LLM based on the task.
+- **Expert LLMs**: Each specializes in a domain (logistics, venue, catering) and generates structured JSON outputs.
+- **Refine Chain**: Ensures the JSON output is correctly formatted and consistent.
+- **Route Selector**: Determines the next step—returning a response to the orchestrator, or executing an API call.
+- **API Execution Chain**: Includes a clarification/argument validator to ensure API calls are valid before execution by an API-specific LLM.
 
 ## Overview
 
@@ -42,14 +54,14 @@ Each **Expert** has:
   * Continue reasoning (return to orchestrator), or
   * Trigger an API execution (via structured JSON routing).
 
----
+
 
 ## System Architecture
 
 ### Core Components
 
 | Component           | File               | Role                                                                                                                                  |
-| ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| - |  | - |
 | **Expert**          | `expert.py`        | Defines specialized domain agents. Each expert has its own prompt, available tools, and routing logic (`route`, `evaluate_api_exec`). |
 | **Orchestrator**    | `orchestrator.py`  | Central router (junior assistant) that parses JSON outputs from LLMs and directs flow to appropriate nodes.                           |
 | **APIPipeline**     | `api_execution.py` | Executes API tasks generated by experts. Returns results to the correct expert or orchestrator.                                       |
@@ -57,7 +69,7 @@ Each **Expert** has:
 | **User Simulator**  | `simulators.py`    | Simulates realistic user responses based on context and chat history.                                                                 |
 | **Helpers**         | `helpers.py`       | Defines `EventState`, the shared memory object containing conversation history, tasks, and routing metadata.                          |
 
----
+
 
 ## Data Flow
 
@@ -83,7 +95,7 @@ Orchestrator
   * Trigger an API call (`"route": "api_execution"`)
 * **APIExecution:** Returns data and routes back to the correct caller using `state["caller"]`.
 
----
+
 
 ## State Definition
 
@@ -100,7 +112,7 @@ class EventState(TypedDict):
     caller: str
 ```
 
----
+
 
 ## Example `experts.json`
 
@@ -127,31 +139,55 @@ class EventState(TypedDict):
 }
 ```
 
----
 
-## Running the Workflow
 
-### 1. Install Dependencies
+1.  **Running the Workflow**
 
-```bash
-pip install langgraph langchain-openai IPython
-```
+This project requires **Python 3.9+**, along with access to LangChain libraries, Groq API models, and the LangSmith tracing platform.  
+All commands shown below assume you are working inside a Jupyter notebook or a terminal that supports shell execution.
 
-### 2. Set Environment Variable
 
-```bash
-export GROQ_API_KEY="your_groq_api_key"
-```
 
-### 3. Run the System
+2.  **Installation and Environment Setup**
+
+Install all required Python packages:
 
 ```bash
-python main.py
-```
----
+pip install langchain_community langchain-openai langchain groq \
+             langsmith langgraph tqdm
+````
+
+Configure the necessary environment variables for LangChain tracing and model access:
+
+`import os`
+`os.environ['LANGCHAIN_TRACING_V2'] = 'true'`
+`os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'`
+`os.environ['LANGCHAIN_API_KEY'] = "lsv2..."`
+`os.environ['GROQ_API_KEY'] = "gsk..."`
+`
+
+
+3. **Cloning the Repository**
+
+`
+git clone https://oauth2:glpat-.....@gitlab.com/ShravastiSarkar/UoB_MScThesis.git
+`
+
+Move into the project directory:
+
+`cd UoB_MScThesis`
+
+### Running the System
+
+Run the main execution script, which orchestrates the scenario generator, expert agents, the API-mocking pipeline, and logging:
+
+`python main.py`
+
+This will launch the multi-agent workflow and produce conversation transcripts, API call sequences, and system logs.
+If LangSmith integration is enabled, runs will automatically be traced and uploaded for structured evaluation.
+
 
 ## Example Output (Simplified)
-
 ```
 [ProblemCreatorLLM] You are organizing an event for 100 guests on July 15th.
 [User] I need help booking a venue.
@@ -162,7 +198,6 @@ python main.py
 [JuniorAssistant] Task completed. Anything else?
 ```
 
----
 
 ## Key Design Principles
 
@@ -171,7 +206,7 @@ python main.py
 * **Transparency:** Conversation history is logged in `EventState.chat_history`.
 * **Extensibility:** Add new experts by simply updating `experts.json`.
 
----
+
 
 ## Customization
 
@@ -180,7 +215,7 @@ To add a new expert:
 1. Define it in `experts.json` with its description, prompt, and API schema.
 2. The main script will automatically add its node and routing edges.
 
----
+
 
 ## Future Extensions
 
@@ -188,74 +223,3 @@ To add a new expert:
 * Add memory persistence via a database or vector store.
 * Implement user feedback loops for reinforcement.
 
----
-
-
-
-## Project Pitch:
-## **Dataset Generation (Multi Agent+ Tool Use) Idea**
-*Currently Multi-Agent Multi Turn but can simply be configured to have 1 agent.*
-
-Based on my review of relevant research papers, I identified a gap in datasets for training multi-agent tool-use systems. To address this, I propose methods for dataset creation, outlined at the end of this document. As a starting point, I decided to develop a simpler proof-of-concept system to validate the approach before scaling to more complex implementations.
-
-**System Overview**  
-The system simulates a user, modeled as a junior field assistant, interacting with an orchestrator LLM connected to specialized expert LLMs within an event planning company. These experts include a Logistics Expert, Venue Manager, and Catering Manager, each handling distinct units. To simulate problem creation, a Problem Creator module generates tasks that serve as hints for the user-simulating LLM. 
-
-Eg Problem: *A local community fundraiser is scheduled for next Sunday at 7 PM in the town hall, expecting about 120 guests. During the final rehearsal, the volunteer coordinator discovered that the “Garden Cleanup” and “Dinner Prep” breakout rooms were accidentally assigned to the same time slot. This double‑booking will force volunteers into two rooms simultaneously, causing confusion about where to report and potentially delaying the start of the main event. The issue is minor, but it needs quick resolution to keep the schedule on track*. 
-
-The User LLM continuously validates whether the current solution (based on reviewing the entire chat history) sufficiently addresses the task. The user is restricted to asking simple, first-person questions to maintain consistency and simplicity in interactions.
-```
-Problem Injection (Or generation)
-   ↓
- User ↴
-  └─ Orchestrator LLM
-     ↕── Expert 1: Logistics Expert <--------------------------←
-     |    ↳ LLM generates JSON output           ↑              ↑ 
-     |    ↳ Refine Output to parseable JSON     |              |
-     |    ↳ Route Selector                      |              |
-     |        ├── response → [orchestrator]     |              |
-     |        ├── api_execution →--> clarification ------->api_execution
-     |                              [arg validator]    [LLM backed Mock Server]
-     ├──→ Expert 2: Venue Manager (similar flow)--------------→↑
-     ├──→ Expert 3: Catering Manager (similar flow)-----------→|
-```
-- **Orchestrator LLM**: Acts as the central coordinator, routing user queries to the appropriate expert LLM based on the task.
-- **Expert LLMs**: Each specializes in a domain (logistics, venue, catering) and generates structured JSON outputs.
-- **Refine Chain**: Ensures the JSON output is correctly formatted and consistent.
-- **Route Selector**: Determines the next step—returning a response to the orchestrator, or executing an API call.
-- **API Execution Chain**: Includes a clarification/argument validator to ensure API calls are valid before execution by an API-specific LLM.
-
-**Next steps I was hoping to discuss**  
-Based on the described architecture, I was hoping to get suggestions to improve the system prompts for the LLMs amd the overall architecture change ideas, from research papers since we have reviewed different sets of papers.
-
-**1. Sharper LLM Prompts**
-I want to improve the system prompts for my Orchestrator, Expert, and User-Simulating LLMs using ideas from multi-agent research. Any suggestions for making role definitions clearer and outputs more consistent?
-
-**2. Architecture Upgrades**
-Exploring ways to strengthen the setup—like adding a “committee” of LLMs to check conversation quality (coherence, relevance, task fit). What other design tweaks could make the system smoother or smarter?
-
-**3. Reducing LLM Uncertainty**
-I’d like to replace some LLM-based steps with rule-based or algorithmic methods to make the pipeline faster and more reliable. Which parts (e.g., routing, validation) would benefit most from this?
-
-**4. Direct Expert–User Interaction**
-Would it help if Expert LLMs handled simpler user queries directly, skipping the Orchestrator? How could I test whether this performs better than my current setup?
-
-**5. Turning Queries into Conversations**
-I simply use a problem creator llm to generate single queries/problem scenarios (like from DevRev) and want to turn them into multi-turn dialogues. Feeding them as problem statements to the user simulator (as hints) works, but what other approaches could generate natural, multi-step interactions?
-
-**6. Comparing Architectures**
-Some ways to quickly compare different designs—like Orchestrator vs. direct Expert–User flow? I’m looking for practical metrics or lightweight tests.
-
-
- **Why I Chose This Approach**
-
-* Open-source APIs tend to be highly varied in functionality, making it difficult to maintain domain consistency.
-* Generating a curated list of APIs within a single domain provides a clearer and more accurate representation of the problem statement we aim to address.
-* The dataset generation architecture is reusable, since most of its components are configurable.
-* This configurable design allows the system to be easily adapted for multiple domains or use cases with minimal changes. I was hoping that even for the different user types shared by DevRev, we would simply be able to change the sort of experts we are working with and convert the queries into a conversation. In case only a single expert is required: i.e. single agent environment, it is still configurable.
-
-One Issue I do forsee is that this is becoming in some parts more of an engineering/dev problem rather than a research problem so I was hoping to get everyone's opinions on it on what could be improved or what changes/ exploring could be done based on the papers we have read.
-
-**Author:** Shravasti Sarkar
-**Version:** 0.1
-**Framework:** LangGraph + Groq LLM Integration
