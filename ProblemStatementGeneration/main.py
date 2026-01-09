@@ -30,10 +30,10 @@ from graph_sampling.api_diversity import select_diverse_trajectories_jaccard
 from graph_sampling.params import RANDOM_SEED
 from trajectory_validation.io_matching import validate_trajectory
 
-EXPERTS_JSON_PATH = "experts_Event Management Company.json"
+EXPERTS_JSON_PATH = "experts.json"
 def main(
-    experts_json_path: str = "experts_Event Management Company.json",
-    weights_csv_path: str = "eventManagement_apigraph_weights.csv",
+    experts_json_path: str = "experts.json",
+    weights_csv_path: str = "api_graph.csv",
     output_csv: str = "entropy_trajectories.csv",
     n_start: int = 50,
     traj_per_node: int = 3,
@@ -67,9 +67,9 @@ def main(
     results = select_diverse_trajectories_jaccard(
         G, api_meta, emb_map,
         candidate_trajectories=raw_trajectories,
-        target_count=100,
+        target_count=50,
         jaccard_threshold=0.35,
-        keep_higher_entropy_prob=0.9,
+        keep_higher_entropy_prob=0.7,
         n_gram=3
     )
 
@@ -89,15 +89,15 @@ def main(
 if __name__ == "__main__":
     # Adjust paths/n_start/etc. as needed
     trajectories = main(
-        experts_json_path="experts_Event Management Company.json",
-        weights_csv_path="eventManagement_apigraph_weights.csv",
+        experts_json_path="experts.json",
+        weights_csv_path="api_graph.csv",
         output_csv="entropy_trajectories.csv",
         n_start=50,
         traj_per_node=3,
         p_stop=0.25
     )
     
-    all_apis = []
-    for key, value in normalize_api_structure(load_experts(EXPERTS_JSON_PATH)).items():
-        all_apis+= [{"name": i["APIName"], "params":i["params"], "description": i["description"], "output":i["output"], "expert": key} for i in value["apis"]]
-    results = validate_trajectory(trajectories[:4], all_apis)
+    # all_apis = []
+    # for key, value in normalize_api_structure(load_experts(EXPERTS_JSON_PATH)).items():
+    #     all_apis+= [{"name": i["APIName"], "params":i["params"], "description": i["description"], "output":i["output"], "expert": key} for i in value["apis"]]
+    # results = validate_trajectory(trajectories[:4], all_apis)

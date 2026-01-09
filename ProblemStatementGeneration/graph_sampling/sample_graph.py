@@ -151,7 +151,7 @@ def forward_random_walk(G: nx.DiGraph, start: str, p_stop: float = 0.25, max_ste
         path.append(cur)
     return path
 
-def full_trajectory_from_start(G: nx.DiGraph, start: str, p_stop: float=0.25, max_back: Optional[int]=None, max_fwd:int=30, rng=random) -> List[str]:
+def full_trajectory_from_start(G: nx.DiGraph, start: str, p_stop: float=0.25, max_back: Optional[int]=None, max_fwd:int=10, rng=random) -> List[str]:
     """
     Return a full trajectory: root -> ... -> start -> ... -> end
     - backward_to_root returns root->...->parent_of_start (no start)
@@ -213,7 +213,16 @@ def entropy_function(
             pair_count += w
     dissim_score = dissim_sum / (pair_count + 1e-12)
 
-    length_score = np.log1p(len(traj)) / np.log1p(max_len_norm)
+    L = len(traj)
+    if 3 <= L <= 7: 
+        length_score = 1.0
+    elif L < 3:     
+        length_score = 0.2
+    else:           
+        length_score = 0.1
+
+
+    # length_score = np.log1p(len(traj)) / np.log1p(max_len_norm)
 
     repeats = len(traj) - len(set(traj))
     repeat_frac = repeats / len(traj)
@@ -237,9 +246,9 @@ def generate_and_score(
     emb_map: Dict[str, np.ndarray],
     n_start: int = 50,
     traj_per_node: int = 3,
-    p_stop: float = 0.25,
+    p_stop: float = 0.65,
     max_back: Optional[int] = None,
-    max_fwd: int = 30,
+    max_fwd: int = 10,
     rng = random
 ) -> List[Tuple[List[str], float]]:
     starts = sample_start_nodes_unique(G, n_start)
