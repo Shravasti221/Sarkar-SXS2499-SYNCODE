@@ -1,0 +1,201 @@
+# Multi-Agent Orchestrated Workflow with LangGraph
+
+This repository implements a **dynamic, multi-agent orchestration framework** built on [LangGraph](https://github.com/langchain-ai/langgraph).
+It enables **conversational coordination between multiple expert LLM agents**, a central orchestrator, user simulators, and shared API tools — all working in a cyclic, reasoning-based workflow.
+
+## **Dataset Generation Introduction**
+
+Based on my review of relevant research papers, I identified a gap in datasets for training multi-agent tool-use systems. To address this, I propose methods for dataset creation, outlined at the end of this document. As a starting point, I decided to develop a simpler proof-of-concept system to validate the approach before scaling to more complex implementations.
+
+**System Overview**  
+The system simulates a user, modeled as a junior field assistant, interacting with an orchestrator LLM connected to specialized expert LLMs within an event planning company. These experts include a Logistics Expert, Venue Manager, and Catering Manager, each handling distinct units. To simulate problem creation, a Problem Creator module generates tasks that serve as hints for the user-simulating LLM. 
+
+Eg Problem: *A local community fundraiser is scheduled for next Sunday at 7 PM in the town hall, expecting about 120 guests. During the final rehearsal, the volunteer coordinator discovered that the “Garden Cleanup” and “Dinner Prep” breakout rooms were accidentally assigned to the same time slot. This double‑booking will force volunteers into two rooms simultaneously, causing confusion about where to report and potentially delaying the start of the main event. The issue is minor, but it needs quick resolution to keep the schedule on track*. 
+
+The User LLM continuously validates whether the current solution (based on reviewing the entire chat history) sufficiently addresses the task. The user is restricted to asking simple, first-person questions to maintain consistency and simplicity in interactions.
+```
+Problem Injection (Or generation)
+   ↓
+ User ↴
+  └─ Orchestrator LLM
+     ↕── Expert 1: Logistics Expert <----------←--------------←
+     |    ↳ LLM generates JSON output           ↑              ↑ 
+     |    ↳ Refine Output to parseable JSON     |              |
+     |    ↳ Route Selector                      |              |
+     |        ├── response → [orchestrator]     |              |
+     |        ├── api_execution →--> clarification ->api_execution
+     |                              [arg validator]    [LLM backed Mock Server]
+     ├──→ Expert 2: Venue Manager (similar flow)--→↑
+     ├──→ Expert 3: Catering Manager (similar flow)--→|
+```
+- **Orchestrator LLM**: Acts as the central coordinator, routing user queries to the appropriate expert LLM based on the task.
+- **Expert LLMs**: Each specializes in a domain (logistics, venue, catering) and generates structured JSON outputs.
+- **Refine Chain**: Ensures the JSON output is correctly formatted and consistent.
+- **Route Selector**: Determines the next step—returning a response to the orchestrator, or executing an API call.
+- **API Execution Chain**: Includes a clarification/argument validator to ensure API calls are valid before execution by an API-specific LLM.
+
+## Overview
+
+The system models a **conversation-driven event management environment**, where:
+
+* **ProblemCreator** generates a scenario.
+* **User** acts within that scenario.
+* **Orchestrator (Junior Assistant)** interprets the user’s intent and dynamically routes control to:
+
+  * An **Expert Agent** (domain-specific specialist),
+  * The **API Execution Node** (for tool usage),
+  * Or back to the **User**.
+
+Each **Expert** has:
+
+* A custom **system prompt** (`expert_prompt` in `experts.json`)
+* Internal logic to decide whether to:
+
+  * Continue reasoning (return to orchestrator), or
+  * Trigger an API execution (via structured JSON routing).
+
+
+
+## System Architecture
+
+### **Core Components**
+
+| Component           | File               | Role                                                                 |
+| ------------------- | ------------------ | -------------------------------------------------------------------- |
+| **Expert**          | `expert.py`        | Defines specialized agents with prompts, tools, and routing logic.   |
+| **Orchestrator**    | `orchestrator.py`  | Parses JSON outputs and routes execution.                            |
+| **APIPipeline**     | `api_execution.py` | Executes expert-requested API tasks and returns results.             |
+| **Problem Creator** | `simulators.py`    | Generates the event scenario.                                        |
+| **User Simulator**  | `simulators.py`    | Simulates realistic user behavior.                                   |
+| **Helpers**         | `helpers.py`       | Defines `EventState`, containing shared memory and routing metadata. |
+
+
+### Routing Logic
+
+* **Orchestrator:** Uses JSON responses of the form
+  `{"route": "user" | "api_execution" | "expert_name" | "end", "task": {...}}`
+* **Experts:** Decide based on API responses and chat context whether to:
+
+  * Continue reasoning (`"route": "orchestrator"`)
+  * Trigger an API call (`"route": "api_execution"`)
+* **APIExecution:** Returns data and routes back to the correct caller using `state["caller"]`.
+
+
+
+## State Definition
+
+Defined in `helpers.py`:
+
+```python
+class EventState(TypedDict):
+    user_request: str
+    problem_created: Dict
+    problem_statement: str
+    chat_history: List[Dict[str, str]]
+    api_task: Optional[ApiCall]
+    api_result: Dict
+    caller: str
+```
+
+
+
+## Example `experts.json`
+
+```json
+{
+  "VenueExpert": {
+    "description": "Handles venue booking and logistics.",
+    "expert_prompt": "You are an expert in venue management and logistics.",
+    "apis": {
+      "book_venue": {
+        "params": {"date": "str", "guests": "int", "location": "str"}
+      }
+    }
+  },
+  "CateringExpert": {
+    "description": "Manages food and beverages for events.",
+    "expert_prompt": "You specialize in catering arrangements for large events.",
+    "apis": {
+      "arrange_catering": {
+        "params": {"guests": "int", "menu_type": "str"}
+      }
+    }
+  }
+}
+```
+
+
+
+1.  **Running the Workflow**
+
+This project requires **Python 3.9+**, along with access to LangChain libraries, Groq API models, and the LangSmith tracing platform.  
+All commands shown below assume you are working inside a Jupyter notebook or a terminal that supports shell execution.
+
+
+
+2.  **Installation and Environment Setup**
+
+Install all required Python packages:
+
+```bash
+pip install langchain_community langchain-openai langchain groq \
+             langsmith langgraph tqdm
+````
+
+Configure the necessary environment variables for LangChain tracing and model access:
+
+`import os`
+`os.environ['LANGCHAIN_TRACING_V2'] = 'true'`
+`os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'`
+`os.environ['LANGCHAIN_API_KEY'] = "lsv2..."`
+`os.environ['GROQ_API_KEY'] = "gsk..."`
+
+
+3. **Cloning the Repository**
+
+`
+git clone https://oauth2:glpat-.....@gitlab.com/ShravastiSarkar/UoB_MScThesis.git
+`
+
+Move into the project directory:
+
+`cd UoB_MScThesis`
+
+### Running the System
+
+Run the main execution script, which orchestrates the scenario generator, expert agents, the API-mocking pipeline, and logging:
+
+`python main.py`
+
+This will launch the multi-agent workflow and produce conversation transcripts, API call sequences, and system logs.
+If LangSmith integration is enabled, runs will automatically be traced and uploaded for structured evaluation.
+
+
+## Example Output (Simplified)
+```
+[ProblemCreatorLLM] You are organizing an event for 100 guests on July 15th.
+[User] I need help booking a venue.
+[JuniorAssistant] Routing to VenueExpert...
+[VenueExpert] {"route": "api_execution", "task": {"name": "book_venue", "params": {...}}}
+[APIExecutionNode] Venue booked successfully.
+[VenueExpert-EvalAPI] {"route": "orchestrator"}
+[JuniorAssistant] Task completed. Anything else?
+```
+
+
+## Key Design Principles
+
+* **Declarative Routing:** All agents emit structured JSON to control flow.
+* **LLM Autonomy:** Experts and orchestrator reason and decide routing themselves.
+* **Transparency:** Conversation history is logged in `EventState.chat_history`.
+* **Extensibility:** Add new experts by simply updating `experts.json`.
+
+
+
+## Customization
+
+To add a new expert:
+
+1. Define it in `experts.json` with its description, prompt, and API schema.
+2. The main script will automatically add its node and routing edges.
+
