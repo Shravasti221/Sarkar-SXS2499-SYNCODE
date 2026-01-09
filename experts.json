@@ -116,12 +116,12 @@
       {
         "APIName": "retrieveDiscount",
         "params": {
-          "url": "https://api.eventbrite.com/v2/discounts/{discount_id}",
+          "url": "https://api.eventbrite.com/v2/discounts/{event_id}",
           "apikey": "string",
-          "discount_id": "string",
+          "event_id": "string",
           "expand": "array (optional)"
         },
-        "description": "Fetches discount metadata including type, availability, and associated events or ticket groups.",
+        "description": "Fetches discount metadata including type, availability, and associated ticket groups given a particular event.",
         "output": {
           "discount_id": "string",
           "code": "string",
@@ -183,6 +183,30 @@
               "schedule_id": "string",
               "frequency": "string",
               "start_time": "string (ISO8601)"
+            }
+          ]
+        }
+      },
+      {
+        "APIName": "listEventsByOrganization",
+        "params": {
+          "url": "https://api.eventbrite.com/v2/organizations/{organization_id}/events",
+          "apikey": "string",
+          "organization_id": "string",
+          "status": "string (optional: draft|live|completed|canceled)",
+          "page": "integer (optional)"
+        },
+        "description": "Returns a paginated list of all events owned by a given organization, optionally filtered by the event status.",
+        "output": {
+          "organization_id": "string",
+          "page": "integer",
+          "events": [
+            {
+              "event_id": "string",
+              "name": "string",
+              "status": "string",
+              "start_datetime": "string",
+              "end_datetime": "string"
             }
           ]
         }
@@ -408,31 +432,6 @@
           "event_id": "string",
           "unpublished": "boolean",
           "errors": "array (optional)"
-        }
-      },
-
-      {
-        "APIName": "listEventsByOrganization",
-        "params": {
-          "url": "https://api.eventbrite.com/v2/organizations/{organization_id}/events",
-          "apikey": "string",
-          "organization_id": "string",
-          "status": "string (optional: draft|live|completed|canceled)",
-          "page": "integer (optional)"
-        },
-        "description": "Returns a paginated list of all events owned by a given organization, optionally filtered by the event status.",
-        "output": {
-          "organization_id": "string",
-          "page": "integer",
-          "events": [
-            {
-              "event_id": "string",
-              "name": "string",
-              "status": "string",
-              "start_datetime": "string",
-              "end_datetime": "string"
-            }
-          ]
         }
       },
 

@@ -1,6 +1,5 @@
 from typing import Any, Dict
 import json
-import uuid
 from langchain_core.messages import SystemMessage, ToolMessage, AIMessage, HumanMessage
 
 from utils.helpers import print_message
@@ -8,55 +7,6 @@ from utils.llm import llm
 from utils.safe_invoke_llm import safe_invoke_llm
 from utils.pydantic_objects import responseFormat, write_pydantic_object
 from utils.json_format import JsonFormat
-from utils.detect_repetition import check_repetition
-
-import difflib
-from typing import List, Set
-
-def get_repeated_experts(chat_history: List, threshold: float = 0.85, window: int = 4) -> Set[str]:
-    """
-    Detects experts who have sent algorithmically similar messages repeatedly.
-
-    Args:
-        chat_history (List): List of AIMessage objects with .content and .response_metadata.
-        threshold (float): Similarity threshold for near-duplicate detection.
-        window (int): Number of recent expert messages to check.
-
-    Returns:
-        Set[str]: Names of experts who have repeated themselves.
-    """
-
-    repeated_experts = set()
-
-    expert_msgs = [
-        msg for msg in reversed(chat_history)
-        if hasattr(msg, "response_metadata")
-        and msg.response_metadata.get("type") == "expert"
-    ][:window]
-
-    if len(expert_msgs) < 2:
-        return repeated_experts
-
-    for i in range(len(expert_msgs)):
-        for j in range(i + 1, len(expert_msgs)):
-            exp_i = expert_msgs[i].response_metadata.get("name")
-            exp_j = expert_msgs[j].response_metadata.get("name")
-
-            if exp_i != exp_j:
-                continue
-
-            text_i = expert_msgs[i].content.strip().lower()
-            text_j = expert_msgs[j].content.strip().lower()
-
-            ratio = difflib.SequenceMatcher(None, text_i, text_j).ratio()
-
-            if ratio >= threshold:
-                repeated_experts.add(exp_i)
-
-    return repeated_experts
-
-
-
 # -----------------------------
 # Orchestrator (Junior Assistant)
 # -----------------------------
@@ -82,25 +32,6 @@ class Orchestrator:
         most_recent_chat = []
         if len(state.chat_history) >0:
           most_recent_chat = state.chat_history[-1].content
-        # Detect repeated experts in recent history
-        repeated_experts = get_repeated_experts(state.chat_history)
-        repetition_note = ""
-
-        if repeated_experts:
-            repeated_list = ", ".join(repeated_experts)
-            repetition_note = f"""
-            ---REPETITION NOTE ---
-        IMPORTANT CONTEXT:
-        The following expert(s) — {repeated_list} — have been giving very similar responses multiple times.
-        Do NOT call them again unless you have new information or context.
-        Explicitly decide whether to:
-        - Route to a different expert with fresh reasoning, OR
-        - Return the message to the user with a clarified or summarized response.
-        """
-        
-          
-          
-        """Build the system prompt for the Orchestrator LLM."""
         BASE_PROMPT = ""
         if most_recent_chat:
             if isinstance(state.chat_history[-1], (AIMessage, ToolMessage)):
@@ -108,38 +39,22 @@ class Orchestrator:
 You are the Orchestrator Agent.
 You have just received a message from an Expert.
 Your job: Decide whether to
-A) Forward the expert’s result to the user (route = "response"), possibly adding short context or a clarifying question, OR
-B) Route the conversation to another expert (route = "<EXPERT_NAME>") if the expert’s reply indicates the task is incomplete or requires different expertise.
+A) Forward the expert’s result to the user (route = "response")
+B) Route the conversation to another expert (route = "<EXPERT_NAME>")
 
 LATEST MESSAGE (for reference): {most_recent_chat}
 
---- CONTEXT RULES (use all history) ---
-- Treat the full conversation history as available context.
-- Detect whether the latest expert reply **completes**, **deflects**, **requests clarification**, or **recommends another domain**.
-
 --- DECISION RULES (STRICT JSON output only) ---
-Your assistant MUST output exactly one JSON object and nothing else. No extra keys, no explanation, no prose.
+Output exactly one JSON object and nothing else. No extra keys, no explanation, no prose.
 
 1) If the expert reply fully answers or concludes the topic, output EXACTLY:
-{{{{ "route": "response", "task": null, "response": "<summarized or contextualized version of the expert’s message for the user>" }}}}
+{{{{ "route": "response", "task": None, "response": None }}}}
 
-2) If the expert reply clearly states inability, lack of tools, or suggests a different domain, route to an appropriate expert:
-{{{{ "route": "<EXPERT_NAME>", "task": null, "response": null }}}}
-
-3) If the expert requests clarification or more input ask the user for clarification (return to user):
-{{{{ "route": "response", "task": null, "response": "<expert clarifying question to user; include context and why it's needed>" }}}}
+2) If the expert requests clarification or more input ask the user for clarification (return to user):
+{{{{ "route": "response", "task": None, "response": None }}}}
 
 --- ALLOWED EXPERT NAMES ---
 Allowed Expert Names: {experts_keys_bar}
-
---- THINKING / BEHAVIORAL INSTRUCTIONS ---
-- First, check whether the most recent message came from the same expert previously used for this topic.
-- If {repetition_note.strip() and 'repetition_note is present' or 'no repetition_note present'}: account for repetition as instructed above.
-- If the expert asks for clarification, prefer asking the **user** when the requested information is user-specific (credentials, preferences, consent, sample rows). Prefer routing to another expert/tool if the missing info can be derived automatically (e.g., data-cleaning agent).
-- If routing to an expert, include one-line rationale in your head but DO NOT output it — only emit the JSON.
-- Always follow the JSON templates exactly; no extra fields allowed.
-
-Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to the templates above. No prose, no markdown, no extra characters.
 """.strip()
      
             elif isinstance(state.chat_history[-1], (HumanMessage)):
@@ -149,24 +64,18 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
             You are the Orchestrator Agent.
             Your job is to:
             1. Interpret the user’s message and the full conversation history.
-            2. Your assistant output MUST be a single JSON object and nothing else. Be BRIEF
+            2. Output a single JSON object and nothing else. Be BRIEF
             3. IF there is either {experts_keys_bar} has a match greater than 50% with the latest chat context ({most_recent_chat}) route to the correct Expert, output EXACTLY:
             {{
                 "route": "<EXPERT_NAME>",
-                "task": null,
-                "response": null
+                "task": None,
+                "response": None
             }}
             Allowed Expert Names: {experts_keys_bar}
-            4. IF there is no appropriate expert agent OR external task is required, give a short direction. DONOT ask further questions. Output EXACTLY:
-            {{
-                "route": "response",
-                "task": null,
-                "response": "<your textual answer>"
-            }}
 
             Experts available:
             {"\n".join(experts)}
-            Begin reasoning _internally_, then emit EXACTLY one JSON object that conforms to the rules above.
+            Json formatted response is: 
             """
         return BASE_PROMPT
 
@@ -174,63 +83,20 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
     def node_fn(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Update state with LLM output (always return dict)."""
         sys_prompt = self.build_orchestrator_prompt(state)
-        print("[Orchestrator IP] Chat history length:", len(state.chat_history))
+        # print("[Orchestrator IP] Chat history length:", len(state.chat_history))
         
         msg = safe_invoke_llm(llm,[SystemMessage(content =  sys_prompt)] + state.chat_history)
-        attempts = 0
-        max_retries = 3
-
-        while attempts < max_retries:
-            if check_repetition(state, msg.content, self.name):
-                break
-            
-            attempts += 1
-            print(f"[REPETITION DETECTED - Retry {attempts}/{max_retries}]")
-            
-            if attempts < max_retries:
-                updated_sysprompt = sys_prompt+ f"\n\n[CRITICAL: Generate COMPLETELY NEW response. NO repetition of previous answers.]"
-                msg = safe_invoke_llm(llm, [SystemMessage(content=updated_sysprompt)] + state.chat_history)
-            else:
-                print("[GIVING UP AFTER 3 RETRIES - Using last response]")
         print_message(state, self.name, msg.content)
-
-        try:
-            formatted_output = self.json_format.refine(msg.content)
-            msg_text = formatted_output.strip().removeprefix("```json").removesuffix("```").strip()
-            parsed = json.loads(msg_text)
-        except Exception as e:
-            # fallback if LLM fails to produce JSON
-            print(f"Orchestrator JSON parse error: {e}")
-            state.chat_history.append(ToolMessage(content=f"Error: {e} (JSON Parse Error, defaulting to JuniorAssistant) Raw Text: {msg.content}", tool_call_id= "json_parse_error" + str(uuid.uuid4()), response_metadata={"type": "error", "name": "json_parse_error"}))
-            state.next = "orchestrator"
-            return state
-        try:
-            expert_obj = responseFormat(**parsed)
-        except Exception as e:
-            # fallback
-            print(f"Orchestrator JSON parse/validation error: {e}")
-            state.chat_history.append(ToolMessage(content=f"Error: {e} (Validation Error, defaulting to JuniorAssistant) Raw Text: {msg.content}, Required Pydantic format: {responseFormat.model_json_schema()}", tool_call_id= "pydantic_parse_error" + str(uuid.uuid4()), response_metadata={"type": "error", "name": "pydantic_parse_error"}))
-            state.next = "orchestrator"
-            return state
-        if expert_obj.route == "api_execution":
-            # task must be present and valid
-            if not expert_obj.task:
-                state.next = "orchestrator"
-                return state
-            state.api_task = expert_obj.task.dict()
-            state.caller = self.name
-            state.next = "api_execution"
-            return state
-        if expert_obj.route == "response":
-            response_text = expert_obj.response or ""
-            state.chat_history.append(AIMessage(content=response_text, response_metadata={"type": "orchestrator", "name": self.name}))
-            state.caller = self.name
+        
+        formatted_output = self.json_format.refine(msg.content)
+        msg_text = formatted_output.strip().removeprefix("```json").removesuffix("```").strip()
+        parsed = json.loads(msg_text)
+        expert_obj = responseFormat(**parsed)
+        state.caller = self.name
+        if expert_obj.route == "user" or expert_obj.route == "response":
             state.next = "user"
             return state
         if expert_obj.route in self.experts:
-            response_text = expert_obj.response or "ROUTE TO " + expert_obj.route
-            state.chat_history.append(AIMessage(content=response_text, response_metadata={"type": "orchestrator", "name": self.name}))
-            state.caller = self.name
             state.next = expert_obj.route
             return state
         
@@ -241,4 +107,5 @@ Begin internal reasoning now, then emit EXACTLY one JSON object that conforms to
         Returns a small dict with the next action, e.g. {"next": "api_execution"} or {"next": "<expert_name>"}.
         """
         write_pydantic_object(state, state.ts)
+        input()
         return state.next

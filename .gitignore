@@ -4,3 +4,11 @@ credentials/
 ExpertJsonGenerator/
 Synthetic Datasets/
 __pycache__/
+conversations/
+.vscode
+*.pkl
+.venv/
+orchestrator_extended.py
+uv.lock
+workspace.ipynb
+experts copy.json

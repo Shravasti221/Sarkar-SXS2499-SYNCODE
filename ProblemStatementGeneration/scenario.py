@@ -104,9 +104,9 @@ from collections import deque
 def generate_trajectory(G, start_node, p_stop=0.2, rejection_prob=0.9):
     trajectory = deque([start_node])
     selection_counts = {n: 0 for n in G.nodes}
-
+    delta = 0
     # Expand parents
-    while np.random.rand() > p_stop:
+    while np.random.rand() > p_stop + delta:
         parents = list(G.predecessors(trajectory[0]))
         if not parents:
             break
@@ -117,9 +117,11 @@ def generate_trajectory(G, start_node, p_stop=0.2, rejection_prob=0.9):
             break
         trajectory.appendleft(parent)
         selection_counts[parent] += 1
-
+        delta += 0.05
+        
+    delta = 0
     # Expand children
-    while np.random.rand() > p_stop:
+    while np.random.rand() > p_stop + delta:
         children = list(G.successors(trajectory[-1]))
         if not children:
             break
@@ -130,6 +132,7 @@ def generate_trajectory(G, start_node, p_stop=0.2, rejection_prob=0.9):
             break
         trajectory.append(child)
         selection_counts[child] += 1
+        delta += 0.05
 
     return list(trajectory)
 
@@ -186,8 +189,9 @@ def stage1_prompt(scenario: Scenario) -> tuple[str, str]:
 
   **Your task:**
   1. Generate a coherent scenario or storyline that **uses all of the API calls in the order specified** by `{"start_dialogue" + "->" + "->".join([api_name[0] for api_name in scenario['steps']])}`.
-  2. For each transition between steps as defined in {list(scenario['steps_with_hints'].keys())}, generate a **helpful hint** that adds the correct `(apiname)` wherever it should be called in the problem statement.
-  3. Return a detailed problem statment that will use all api calls by adding the correct acpi call in the scenario statement.
+  2. start_dialogue starts a conversation between an employee in an Event Management Company and an AI assistant.
+  3. For each transition between steps as defined in {list(scenario['steps_with_hints'].keys())}, generate a **helpful hint** that adds the correct `(apiname)` wherever it should be called in the problem statement.
+  4. Return a detailed problem statment that will use all api calls by adding the correct acpi call in the scenario statement.
 
   **Rules:**
   * Each hint should correspond exactly to the transitions between consecutive steps.

@@ -47,7 +47,6 @@ class responseFormat(BaseModel):
 class EventState(BaseModel):
     problem_created: Optional[Dict] = None
     problem_statement: Optional[str] = None
-    # chat_history: List[Dict[str, str]] = Field(default_factory=list)
     ts: str
     chat_history: List[BaseMessage] = []
     api_task: Optional[Dict[str, Any]] = None

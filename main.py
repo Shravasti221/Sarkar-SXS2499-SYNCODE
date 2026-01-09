@@ -1,7 +1,6 @@
 import json
 from expert import Expert
 from langgraph.graph import StateGraph, START, END
-from IPython.display import Image, display
 import json, os
 from pathlib import Path
 from ProblemStatementGeneration.scenario import generate_problem_statement
@@ -11,9 +10,12 @@ from api_execution import APIPipeline
 from utils.order_hints import extract_and_order_steps
 from utils.helpers import EventState, extract_and_order_steps
 from utils.pydantic_objects import create_timestamped_file
+from dotenv import load_dotenv
 #-------------------
 # Build Workflow Graph
 # -----------------------------
+load_dotenv()
+OPENAI_API_KEY = os.getenv("GROQ_API_KEY")
 EXPERTS_JSON_PATH = Path(__file__).parent / "experts.json"
 API_GRAPH_PATH = Path(__file__).parent / "api_graph.csv"
 experts_json = json.load(open(EXPERTS_JSON_PATH)) 
@@ -77,14 +79,9 @@ workflow.add_conditional_edges("user", user_route, user_next_nodes)
 # ---------------------------------------------------------------------------------------------------------
 
 chain = workflow.compile()
-display(Image(chain.get_graph().draw_mermaid_png()))
 
 chat_history = []
-problem_trajectory = generate_problem_statement(EXPERTS_JSON_PATH, API_GRAPH_PATH)
-# problem_trajectory["hints"] = extract_and_order_steps(problem_trajectory)
-# # state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created=extract_and_order_steps(problem_trajectory, 0))  
-# state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created=problem_trajectory)
-# state = chain.invoke(state)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
-problem_trajectory["hints"] = extract_and_order_steps(problem_trajectory)
+problem_trajectory = generate_problem_statement(EXPERTS_JSON_PATH, API_GRAPH_PATH)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+problem_trajectory["hints"] = extract_and_order_steps(problem_trajectory, problem_index=0)
 state = EventState(chat_history=chat_history, ts = create_timestamped_file(), problem_created=problem_trajectory)
 state = chain.invoke(state)

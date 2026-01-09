@@ -12,9 +12,7 @@ dependencies = [
     "langchain_community",
     "langsmith",
     "langgraph",
-    "groq"
+    "groq",
+    "networkx",
+    "pandas"
 ]
-
-[tool.uv]
-# Optional: specify which Python version uv should use
-python = "3.10"

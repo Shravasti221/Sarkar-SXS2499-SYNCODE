@@ -31,7 +31,7 @@ class JsonFormat:
 
     def _evaluate(self, text: str) -> tuple[float, str]:
         """Ask model to rate format compliance."""
-        match = re.search(r'\{.*?\}', text, re.DOTALL)
+        match = re.search(r'\{.*\}', text, re.DOTALL)
         if not match:
             return 0, "No JSON object found in the text."
         try:
